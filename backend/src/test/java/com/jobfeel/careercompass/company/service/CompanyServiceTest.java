@@ -3,6 +3,7 @@ package com.jobfeel.careercompass.company.service;
 import com.jobfeel.careercompass.company.domain.Company;
 import com.jobfeel.careercompass.company.dto.CompanyResponse;
 import com.jobfeel.careercompass.company.repository.CompanyRepository;
+import com.jobfeel.careercompass.common.error.ApiException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -10,10 +11,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -132,5 +136,29 @@ class CompanyServiceTest {
         assertThat(response.items()).isEmpty();
         assertThat(response.totalElements()).isZero();
         assertThat(response.totalPages()).isZero();
+    }
+
+    @Test
+    void returnsCompanyDetail() {
+        when(companyRepository.findById("C001"))
+                .thenReturn(Optional.of(new Company("C001", "예시테크", "IT")));
+
+        var response = companyService.getCompany("C001");
+
+        assertThat(response).isEqualTo(
+                new CompanyResponse("C001", "예시테크", "IT")
+        );
+    }
+
+    @Test
+    void throwsCompanyNotFoundWhenCompanyDoesNotExist() {
+        when(companyRepository.findById("UNKNOWN"))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> companyService.getCompany("UNKNOWN"))
+                .isInstanceOfSatisfying(ApiException.class, exception -> {
+                    assertThat(exception.getStatus()).isEqualTo(HttpStatus.NOT_FOUND);
+                    assertThat(exception.getCode()).isEqualTo("COMPANY_NOT_FOUND");
+                });
     }
 }
