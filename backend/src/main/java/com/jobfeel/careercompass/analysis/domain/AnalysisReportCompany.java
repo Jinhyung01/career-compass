@@ -37,6 +37,20 @@ public class AnalysisReportCompany {
     }
 
     public AnalysisReportCompany(
+            Long reportId,
+            String companyCode,
+            Long positionId,
+            Integer rank,
+            BigDecimal fitScore
+    ) {
+        this.reportId = reportId;
+        this.companyCode = companyCode;
+        this.positionId = positionId;
+        this.rank = rank;
+        this.fitScore = fitScore;
+    }
+
+    public AnalysisReportCompany(
             Long reportCompanyId,
             Long reportId,
             String companyCode,

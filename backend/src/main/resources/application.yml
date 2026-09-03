@@ -21,12 +21,18 @@ management:
     web:
       exposure:
         include: health
-      cors:
-        allowed-origins: ${APP_CORS_ALLOWED_ORIGIN:http://localhost:5173}
-        allowed-methods: GET
   endpoint:
     health:
       show-details: never
 
 openai:
   api-key: ${OPENAI_API_KEY:}
+
+app:
+  backend-base-url: ${APP_BACKEND_BASE_URL:http://localhost:8080}
+  cors:
+    allowed-origin: ${APP_CORS_ALLOWED_ORIGIN:http://localhost:5173}
+  jwt:
+    issuer: career-compass
+    secret: ${JWT_SECRET:career-compass-local-development-secret-key-change-me}
+    expiration-seconds: ${JWT_EXPIRATION_SECONDS:3600}

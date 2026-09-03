@@ -12,7 +12,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.jobfeel.careercompass.common.auth.MockCurrentUserProvider;
+import com.jobfeel.careercompass.common.auth.CurrentUserProvider;
 import com.jobfeel.careercompass.common.error.ApiException;
 import com.jobfeel.careercompass.user.dto.PositionResponse;
 import com.jobfeel.careercompass.user.dto.ProfileContentResponse;
@@ -25,12 +25,14 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(ProfileController.class)
+@AutoConfigureMockMvc(addFilters = false)
 class ProfileControllerTest {
 
     @Autowired
@@ -39,7 +41,7 @@ class ProfileControllerTest {
     @MockitoBean
     private ProfileService profileService;
     @MockitoBean
-    private MockCurrentUserProvider mockCurrentUserProvider;
+    private CurrentUserProvider currentUserProvider;
 
     private static final String TOKEN = "Bearer mock-access-token";
 
@@ -55,7 +57,7 @@ class ProfileControllerTest {
 
     @Test
     void Token_없으면_401() throws Exception {
-        given(mockCurrentUserProvider.getCurrentUserId(isNull())).willThrow(
+        given(currentUserProvider.getCurrentUserId(isNull())).willThrow(
                 new ApiException(HttpStatus.UNAUTHORIZED, "AUTHENTICATION_REQUIRED", "인증이 필요합니다."));
 
         mockMvc.perform(get("/api/v1/me/profile"))
@@ -66,7 +68,7 @@ class ProfileControllerTest {
 
     @Test
     void GET_정상_200_필수필드_민감필드_없음() throws Exception {
-        given(mockCurrentUserProvider.getCurrentUserId(any())).willReturn(1L);
+        given(currentUserProvider.getCurrentUserId(isNull())).willReturn(1L);
         given(profileService.getProfile(1L)).willReturn(sampleResponse());
 
         mockMvc.perform(get("/api/v1/me/profile").header("Authorization", TOKEN))
@@ -87,7 +89,7 @@ class ProfileControllerTest {
 
     @Test
     void PUT_정상_200() throws Exception {
-        given(mockCurrentUserProvider.getCurrentUserId(any())).willReturn(1L);
+        given(currentUserProvider.getCurrentUserId(isNull())).willReturn(1L);
         given(profileService.saveProfile(eq(1L), any(ProfileUpsertRequest.class)))
                 .willReturn(sampleResponse());
 
@@ -135,7 +137,7 @@ class ProfileControllerTest {
 
     @Test
     void PUT_잘못된_Category_400() throws Exception {
-        given(mockCurrentUserProvider.getCurrentUserId(any())).willReturn(1L);
+        given(currentUserProvider.getCurrentUserId(isNull())).willReturn(1L);
         given(profileService.saveProfile(eq(1L), any(ProfileUpsertRequest.class))).willThrow(
                 new ApiException(HttpStatus.BAD_REQUEST, "INVALID_PROFILE_CATEGORY",
                         "허용되지 않은 category 입니다."));

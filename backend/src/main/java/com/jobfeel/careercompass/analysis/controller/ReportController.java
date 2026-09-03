@@ -7,16 +7,18 @@ import com.jobfeel.careercompass.analysis.dto.ReportCreateRequest;
 import com.jobfeel.careercompass.analysis.dto.ReportDownloadResponse;
 import com.jobfeel.careercompass.analysis.dto.ReportListResponse;
 import com.jobfeel.careercompass.analysis.dto.ReportResponse;
-import com.jobfeel.careercompass.analysis.service.MockReportService;
-import com.jobfeel.careercompass.analysis.support.MockReportCurrentUserProvider;
+import com.jobfeel.careercompass.analysis.service.ReportPdfService;
+import com.jobfeel.careercompass.analysis.service.ReportService;
+import com.jobfeel.careercompass.common.auth.CurrentUserProvider;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -27,23 +29,26 @@ import java.net.URI;
 @RequestMapping("/api/v1/reports")
 public class ReportController {
 
-    private final MockReportService reportService;
-    private final MockReportCurrentUserProvider currentUserProvider;
+    private final ReportService reportService;
+    private final ReportPdfService reportPdfService;
+    private final CurrentUserProvider currentUserProvider;
 
     public ReportController(
-            MockReportService reportService,
-            MockReportCurrentUserProvider currentUserProvider
+            ReportService reportService,
+            ReportPdfService reportPdfService,
+            CurrentUserProvider currentUserProvider
     ) {
         this.reportService = reportService;
+        this.reportPdfService = reportPdfService;
         this.currentUserProvider = currentUserProvider;
     }
 
     @PostMapping
     public ResponseEntity<ReportAcceptedResponse> createReport(
-            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization,
+            Authentication authentication,
             @Valid @RequestBody ReportCreateRequest request
     ) {
-        long userId = currentUserProvider.getCurrentUserId(authorization);
+        long userId = currentUserProvider.getCurrentUserId(authentication);
         ReportAcceptedResponse response = reportService.createReport(userId, request);
         return ResponseEntity
                 .accepted()
@@ -53,22 +58,22 @@ public class ReportController {
 
     @GetMapping
     public ResponseEntity<ReportListResponse> getReports(
-            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization,
+            Authentication authentication,
             @RequestParam(required = false) ReportType reportType,
             @RequestParam(required = false) ReportStatus status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        long userId = currentUserProvider.getCurrentUserId(authorization);
+        long userId = currentUserProvider.getCurrentUserId(authentication);
         return ResponseEntity.ok(reportService.getReports(userId, reportType, status, page, size));
     }
 
     @GetMapping("/{reportId}")
     public ResponseEntity<ReportResponse> getReport(
-            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization,
+            Authentication authentication,
             @PathVariable long reportId
     ) {
-        long userId = currentUserProvider.getCurrentUserId(authorization);
+        long userId = currentUserProvider.getCurrentUserId(authentication);
         ReportResponse response = reportService.getReport(userId, reportId);
         ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.ok();
         if (response.status() == ReportStatus.PENDING || response.status() == ReportStatus.PROCESSING) {
@@ -79,10 +84,23 @@ public class ReportController {
 
     @GetMapping("/{reportId}/download")
     public ResponseEntity<ReportDownloadResponse> getDownload(
-            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization,
+            Authentication authentication,
             @PathVariable long reportId
     ) {
-        long userId = currentUserProvider.getCurrentUserId(authorization);
+        long userId = currentUserProvider.getCurrentUserId(authentication);
         return ResponseEntity.ok(reportService.getDownload(userId, reportId));
+    }
+
+    @GetMapping(value = "/{reportId}/file", produces = MediaType.APPLICATION_PDF_VALUE)
+    public ResponseEntity<byte[]> downloadFile(
+            Authentication authentication,
+            @PathVariable long reportId
+    ) {
+        long userId = currentUserProvider.getCurrentUserId(authentication);
+        byte[] pdf = reportPdfService.createPdf(reportService.getDownloadableReport(userId, reportId));
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=report-" + reportId + ".pdf")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
     }
 }
