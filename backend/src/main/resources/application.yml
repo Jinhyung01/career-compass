@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: career-compass-backend
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/career_compass}
+    username: ${SPRING_DATASOURCE_USERNAME:career}
+    password: ${SPRING_DATASOURCE_PASSWORD:career_dev_password}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  devtools:
+    restart:
+      enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+      cors:
+        allowed-origins: ${APP_CORS_ALLOWED_ORIGIN:http://localhost:5173}
+        allowed-methods: GET
+  endpoint:
+    health:
+      show-details: never
+
+openai:
+  api-key: ${OPENAI_API_KEY:}
