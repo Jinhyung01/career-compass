@@ -12,9 +12,10 @@ public interface CompanyRepository extends JpaRepository<Company, String> {
     @Query("""
             SELECT c
             FROM Company c
-            WHERE (:query IS NULL
-                   OR LOWER(c.companyName) LIKE LOWER(CONCAT('%', :query, '%')))
-              AND (:industry IS NULL OR c.industry = :industry)
+            WHERE (CAST(:query AS String) IS NULL
+                   OR LOWER(c.companyName) LIKE LOWER(CONCAT('%', CAST(:query AS String), '%')))
+              AND (CAST(:industry AS String) IS NULL
+                   OR c.industry = CAST(:industry AS String))
             """)
     Page<Company> search(
             @Param("query") String query,

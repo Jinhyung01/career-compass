@@ -3,7 +3,9 @@ package com.jobfeel.careercompass.company.service;
 import com.jobfeel.careercompass.company.dto.CompanyResponse;
 import com.jobfeel.careercompass.company.dto.CompanySearchResponse;
 import com.jobfeel.careercompass.company.repository.CompanyRepository;
+import com.jobfeel.careercompass.common.error.ApiException;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -45,6 +47,20 @@ public class CompanyService {
                 companies.getTotalElements(),
                 companies.getTotalPages()
         );
+    }
+
+    public CompanyResponse getCompany(String companyCode) {
+        return companyRepository.findById(companyCode)
+                .map(company -> new CompanyResponse(
+                        company.getCompanyCode(),
+                        company.getCompanyName(),
+                        company.getIndustry()
+                ))
+                .orElseThrow(() -> new ApiException(
+                        HttpStatus.NOT_FOUND,
+                        "COMPANY_NOT_FOUND",
+                        "기업을 찾을 수 없습니다."
+                ));
     }
 
     private String normalize(String value) {
