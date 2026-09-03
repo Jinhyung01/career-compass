@@ -36,8 +36,8 @@ class CompanyServiceTest {
         when(companyRepository.search(null, null, pageable))
                 .thenReturn(new PageImpl<>(
                         List.of(
-                                new Company("C001", "SK hynix", "반도체"),
-                                new Company("C002", "SK AX", "IT서비스")
+                                new Company("C001", "SK hynix", "반도체", 12, 34),
+                                new Company("C002", "SK AX", "IT서비스", 9, 27)
                         ),
                         pageable,
                         2
@@ -46,8 +46,8 @@ class CompanyServiceTest {
         var response = companyService.search(null, null, 0, 20);
 
         assertThat(response.items()).containsExactly(
-                new CompanyResponse("C001", "SK hynix", "반도체"),
-                new CompanyResponse("C002", "SK AX", "IT서비스")
+                new CompanyResponse("C001", "SK hynix", "반도체", 12, 34),
+                new CompanyResponse("C002", "SK AX", "IT서비스", 9, 27)
         );
         assertThat(response.page()).isZero();
         assertThat(response.size()).isEqualTo(20);
@@ -141,12 +141,12 @@ class CompanyServiceTest {
     @Test
     void returnsCompanyDetail() {
         when(companyRepository.findById("C001"))
-                .thenReturn(Optional.of(new Company("C001", "SK hynix", "반도체")));
+                .thenReturn(Optional.of(new Company("C001", "SK hynix", "반도체", 12, 34)));
 
         var response = companyService.getCompany("C001");
 
         assertThat(response).isEqualTo(
-                new CompanyResponse("C001", "SK hynix", "반도체")
+                new CompanyResponse("C001", "SK hynix", "반도체", 12, 34)
         );
     }
 

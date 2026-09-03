@@ -46,6 +46,13 @@ public class AnalysisReport {
     protected AnalysisReport() {
     }
 
+    public AnalysisReport(Long userId, ReportType reportType, OffsetDateTime createdAt) {
+        this.userId = userId;
+        this.reportType = reportType;
+        this.status = ReportStatus.PENDING;
+        this.createdAt = createdAt;
+    }
+
     public AnalysisReport(
             Long reportId,
             Long userId,
@@ -96,5 +103,18 @@ public class AnalysisReport {
 
     public OffsetDateTime getCompletedAt() {
         return completedAt;
+    }
+
+    public void complete(String pdfObjectKey, OffsetDateTime completedAt) {
+        this.status = ReportStatus.COMPLETED;
+        this.errorCode = null;
+        this.pdfObjectKey = pdfObjectKey;
+        this.completedAt = completedAt;
+    }
+
+    public void fail(String errorCode, OffsetDateTime completedAt) {
+        this.status = ReportStatus.FAILED;
+        this.errorCode = errorCode;
+        this.completedAt = completedAt;
     }
 }
