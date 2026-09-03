@@ -30,7 +30,9 @@ CREATE TABLE users (
 CREATE TABLE company (
     company_code VARCHAR(20)  PRIMARY KEY,
     company_name VARCHAR(100) NOT NULL,
-    industry     VARCHAR(50)
+    industry     VARCHAR(50),
+    people       INTEGER      NOT NULL DEFAULT 0 CHECK (people >= 0),
+    insight      INTEGER      NOT NULL DEFAULT 0 CHECK (insight >= 0)
 );
 
 -- ---------------------------------------------------------

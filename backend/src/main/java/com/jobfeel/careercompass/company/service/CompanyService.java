@@ -36,7 +36,9 @@ public class CompanyService {
                 .map(company -> new CompanyResponse(
                         company.getCompanyCode(),
                         company.getCompanyName(),
-                        company.getIndustry()
+                        company.getIndustry(),
+                        company.getPeople(),
+                        company.getInsight()
                 ))
                 .toList();
 
@@ -54,7 +56,9 @@ public class CompanyService {
                 .map(company -> new CompanyResponse(
                         company.getCompanyCode(),
                         company.getCompanyName(),
-                        company.getIndustry()
+                        company.getIndustry(),
+                        company.getPeople(),
+                        company.getInsight()
                 ))
                 .orElseThrow(() -> new ApiException(
                         HttpStatus.NOT_FOUND,

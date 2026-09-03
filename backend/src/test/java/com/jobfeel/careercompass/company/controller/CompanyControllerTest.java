@@ -56,9 +56,9 @@ class CompanyControllerTest {
 
     @Test
     void returnsCompaniesWithPaging() throws Exception {
-        given(companyService.search("예시", "IT", 0, 20))
+        given(companyService.search("SK", "반도체", 0, 20))
                 .willReturn(new CompanySearchResponse(
-                        List.of(new CompanyResponse("C001", "예시테크", "IT")),
+                        List.of(new CompanyResponse("C001", "SK hynix", "반도체", 12, 34)),
                         0,
                         20,
                         1,
@@ -67,12 +67,14 @@ class CompanyControllerTest {
 
         mockMvc.perform(get("/api/v1/companies")
                         .header(HttpHeaders.AUTHORIZATION, AUTHORIZATION)
-                        .queryParam("query", "예시")
-                        .queryParam("industry", "IT"))
+                        .queryParam("query", "SK")
+                        .queryParam("industry", "반도체"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].companyCode").value("C001"))
-                .andExpect(jsonPath("$.items[0].companyName").value("예시테크"))
-                .andExpect(jsonPath("$.items[0].industry").value("IT"))
+                .andExpect(jsonPath("$.items[0].companyName").value("SK hynix"))
+                .andExpect(jsonPath("$.items[0].industry").value("반도체"))
+                .andExpect(jsonPath("$.items[0].people").value(12))
+                .andExpect(jsonPath("$.items[0].insight").value(34))
                 .andExpect(jsonPath("$.page").value(0))
                 .andExpect(jsonPath("$.size").value(20))
                 .andExpect(jsonPath("$.totalElements").value(1))
@@ -109,14 +111,16 @@ class CompanyControllerTest {
     @Test
     void returnsCompanyDetail() throws Exception {
         given(companyService.getCompany("C001"))
-                .willReturn(new CompanyResponse("C001", "예시테크", "IT"));
+                .willReturn(new CompanyResponse("C001", "SK hynix", "반도체", 12, 34));
 
         mockMvc.perform(get("/api/v1/companies/C001")
                         .header(HttpHeaders.AUTHORIZATION, AUTHORIZATION))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.companyCode").value("C001"))
-                .andExpect(jsonPath("$.companyName").value("예시테크"))
-                .andExpect(jsonPath("$.industry").value("IT"));
+                .andExpect(jsonPath("$.companyName").value("SK hynix"))
+                .andExpect(jsonPath("$.industry").value("반도체"))
+                .andExpect(jsonPath("$.people").value(12))
+                .andExpect(jsonPath("$.insight").value(34));
     }
 
     @Test
