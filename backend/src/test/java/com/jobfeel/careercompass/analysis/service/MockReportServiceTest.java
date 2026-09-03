@@ -174,8 +174,8 @@ class MockReportServiceTest {
                 .thenReturn(List.of(first, second));
         when(reportItemRepository.findAllByReportCompanyIdIn(List.of(601L, 602L)))
                 .thenReturn(concat(recommendItems(601L), recommendItems(602L)));
-        when(sourceQueryRepository.findCompanyName("C001")).thenReturn(Optional.of("예시테크"));
-        when(sourceQueryRepository.findCompanyName("C002")).thenReturn(Optional.of("클라우드나인"));
+        when(sourceQueryRepository.findCompanyName("C001")).thenReturn(Optional.of("SK hynix"));
+        when(sourceQueryRepository.findCompanyName("C002")).thenReturn(Optional.of("SK AX"));
         when(sourceQueryRepository.findPositionName(10L)).thenReturn(Optional.of("백엔드 개발자"));
 
         ReportResponse response = reportService.getReport(USER_ID, 501L);
@@ -198,7 +198,7 @@ class MockReportServiceTest {
         when(reportRepository.findById(502L)).thenReturn(Optional.of(report));
         when(reportCompanyRepository.findAllByReportIdOrderByRankAsc(502L)).thenReturn(List.of(company));
         when(reportItemRepository.findAllByReportCompanyIdIn(List.of(603L))).thenReturn(fitItems(603L));
-        when(sourceQueryRepository.findCompanyName("C001")).thenReturn(Optional.of("예시테크"));
+        when(sourceQueryRepository.findCompanyName("C001")).thenReturn(Optional.of("SK hynix"));
         when(sourceQueryRepository.findPositionName(10L)).thenReturn(Optional.of("백엔드 개발자"));
 
         ReportResponse response = reportService.getReport(USER_ID, 502L);

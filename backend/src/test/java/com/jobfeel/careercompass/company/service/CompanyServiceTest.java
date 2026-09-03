@@ -36,8 +36,8 @@ class CompanyServiceTest {
         when(companyRepository.search(null, null, pageable))
                 .thenReturn(new PageImpl<>(
                         List.of(
-                                new Company("C001", "예시테크", "IT"),
-                                new Company("C002", "클라우드나인", "IT")
+                                new Company("C001", "SK hynix", "반도체"),
+                                new Company("C002", "SK AX", "IT서비스")
                         ),
                         pageable,
                         2
@@ -46,8 +46,8 @@ class CompanyServiceTest {
         var response = companyService.search(null, null, 0, 20);
 
         assertThat(response.items()).containsExactly(
-                new CompanyResponse("C001", "예시테크", "IT"),
-                new CompanyResponse("C002", "클라우드나인", "IT")
+                new CompanyResponse("C001", "SK hynix", "반도체"),
+                new CompanyResponse("C002", "SK AX", "IT서비스")
         );
         assertThat(response.page()).isZero();
         assertThat(response.size()).isEqualTo(20);
@@ -70,59 +70,59 @@ class CompanyServiceTest {
     @Test
     void searchesByCompanyNameQuery() {
         PageRequest pageable = PageRequest.of(0, 20);
-        when(companyRepository.search("예시", null, pageable))
+        when(companyRepository.search("hynix", null, pageable))
                 .thenReturn(new PageImpl<>(
-                        List.of(new Company("C001", "예시테크", "IT")),
+                        List.of(new Company("C001", "SK hynix", "반도체")),
                         pageable,
                         1
                 ));
 
-        var response = companyService.search("예시", null, 0, 20);
+        var response = companyService.search("hynix", null, 0, 20);
 
         assertThat(response.items()).containsExactly(
-                new CompanyResponse("C001", "예시테크", "IT")
+                new CompanyResponse("C001", "SK hynix", "반도체")
         );
-        verify(companyRepository).search("예시", null, pageable);
+        verify(companyRepository).search("hynix", null, pageable);
     }
 
     @Test
     void searchesByIndustry() {
         PageRequest pageable = PageRequest.of(0, 20);
-        when(companyRepository.search(null, "IT", pageable))
+        when(companyRepository.search(null, "반도체", pageable))
                 .thenReturn(new PageImpl<>(
-                        List.of(new Company("C001", "예시테크", "IT")),
+                        List.of(new Company("C001", "SK hynix", "반도체")),
                         pageable,
                         1
                 ));
 
-        var response = companyService.search(null, "IT", 0, 20);
+        var response = companyService.search(null, "반도체", 0, 20);
 
         assertThat(response.items()).containsExactly(
-                new CompanyResponse("C001", "예시테크", "IT")
+                new CompanyResponse("C001", "SK hynix", "반도체")
         );
-        verify(companyRepository).search(null, "IT", pageable);
+        verify(companyRepository).search(null, "반도체", pageable);
     }
 
     @Test
     void searchesByQueryAndIndustryTogether() {
         PageRequest pageable = PageRequest.of(1, 10);
-        when(companyRepository.search("예시", "IT", pageable))
+        when(companyRepository.search("SK", "반도체", pageable))
                 .thenReturn(new PageImpl<>(
-                        List.of(new Company("C001", "예시테크", "IT")),
+                        List.of(new Company("C001", "SK hynix", "반도체")),
                         pageable,
                         11
                 ));
 
-        var response = companyService.search("예시", "IT", 1, 10);
+        var response = companyService.search("SK", "반도체", 1, 10);
 
         assertThat(response.items()).containsExactly(
-                new CompanyResponse("C001", "예시테크", "IT")
+                new CompanyResponse("C001", "SK hynix", "반도체")
         );
         assertThat(response.page()).isEqualTo(1);
         assertThat(response.size()).isEqualTo(10);
         assertThat(response.totalElements()).isEqualTo(11);
         assertThat(response.totalPages()).isEqualTo(2);
-        verify(companyRepository).search("예시", "IT", pageable);
+        verify(companyRepository).search("SK", "반도체", pageable);
     }
 
     @Test
@@ -141,12 +141,12 @@ class CompanyServiceTest {
     @Test
     void returnsCompanyDetail() {
         when(companyRepository.findById("C001"))
-                .thenReturn(Optional.of(new Company("C001", "예시테크", "IT")));
+                .thenReturn(Optional.of(new Company("C001", "SK hynix", "반도체")));
 
         var response = companyService.getCompany("C001");
 
         assertThat(response).isEqualTo(
-                new CompanyResponse("C001", "예시테크", "IT")
+                new CompanyResponse("C001", "SK hynix", "반도체")
         );
     }
 
