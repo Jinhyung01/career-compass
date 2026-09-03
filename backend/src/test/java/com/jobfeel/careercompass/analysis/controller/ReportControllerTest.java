@@ -6,12 +6,15 @@ import com.jobfeel.careercompass.analysis.dto.ReportAcceptedResponse;
 import com.jobfeel.careercompass.analysis.dto.ReportDownloadResponse;
 import com.jobfeel.careercompass.analysis.dto.ReportListResponse;
 import com.jobfeel.careercompass.analysis.dto.ReportResponse;
-import com.jobfeel.careercompass.analysis.error.ReportExceptionHandler;
-import com.jobfeel.careercompass.analysis.service.MockReportService;
-import com.jobfeel.careercompass.analysis.support.MockReportCurrentUserProvider;
+import com.jobfeel.careercompass.analysis.service.ReportService;
+import com.jobfeel.careercompass.analysis.service.ReportPdfService;
+import com.jobfeel.careercompass.common.auth.CurrentUserProvider;
+import com.jobfeel.careercompass.common.error.ApiException;
+import com.jobfeel.careercompass.common.error.GlobalExceptionHandler;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -20,6 +23,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
+import org.springframework.http.HttpStatus;
+import static org.mockito.ArgumentMatchers.isNull;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -31,7 +37,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(ReportController.class)
-@Import({MockReportCurrentUserProvider.class, ReportExceptionHandler.class})
+@AutoConfigureMockMvc(addFilters = false)
+@Import(GlobalExceptionHandler.class)
 class ReportControllerTest {
 
     private static final String AUTHORIZATION = "Bearer mock-access-token";
@@ -43,10 +50,21 @@ class ReportControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private MockReportService reportService;
+    private ReportService reportService;
+    @MockitoBean
+    private ReportPdfService reportPdfService;
+    @MockitoBean
+    private CurrentUserProvider currentUserProvider;
+
+    @BeforeEach
+    void authenticate() {
+        when(currentUserProvider.getCurrentUserId(isNull())).thenReturn(1L);
+    }
 
     @Test
     void rejectsRequestWithoutAuthorization() throws Exception {
+        when(currentUserProvider.getCurrentUserId(isNull())).thenThrow(
+                new ApiException(HttpStatus.UNAUTHORIZED, "AUTHENTICATION_REQUIRED", "인증이 필요합니다."));
         mockMvc.perform(get("/api/v1/reports"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("AUTHENTICATION_REQUIRED"));

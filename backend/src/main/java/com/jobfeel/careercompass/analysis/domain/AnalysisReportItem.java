@@ -31,6 +31,12 @@ public class AnalysisReportItem {
     protected AnalysisReportItem() {
     }
 
+    public AnalysisReportItem(Long reportCompanyId, ReportItemType itemType, String content) {
+        this.reportCompanyId = reportCompanyId;
+        this.itemType = itemType;
+        this.content = content;
+    }
+
     public AnalysisReportItem(Long itemId, Long reportCompanyId, ReportItemType itemType, String content) {
         this.itemId = itemId;
         this.reportCompanyId = reportCompanyId;

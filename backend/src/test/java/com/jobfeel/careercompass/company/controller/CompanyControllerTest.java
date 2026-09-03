@@ -1,14 +1,16 @@
 package com.jobfeel.careercompass.company.controller;
 
-import com.jobfeel.careercompass.common.auth.MockCurrentUserProvider;
+import com.jobfeel.careercompass.common.auth.CurrentUserProvider;
 import com.jobfeel.careercompass.common.error.ApiException;
 import com.jobfeel.careercompass.common.error.GlobalExceptionHandler;
 import com.jobfeel.careercompass.company.dto.CompanyResponse;
 import com.jobfeel.careercompass.company.dto.CompanySearchResponse;
 import com.jobfeel.careercompass.company.service.CompanyService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -18,12 +20,14 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 
 import static org.mockito.BDDMockito.given;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(CompanyController.class)
-@Import({GlobalExceptionHandler.class, MockCurrentUserProvider.class})
+@AutoConfigureMockMvc(addFilters = false)
+@Import(GlobalExceptionHandler.class)
 class CompanyControllerTest {
 
     private static final String AUTHORIZATION = "Bearer mock-access-token";
@@ -33,9 +37,18 @@ class CompanyControllerTest {
 
     @MockitoBean
     private CompanyService companyService;
+    @MockitoBean
+    private CurrentUserProvider currentUserProvider;
+
+    @BeforeEach
+    void authenticate() {
+        given(currentUserProvider.getCurrentUserId(isNull())).willReturn(1L);
+    }
 
     @Test
     void returnsUnauthorizedWhenTokenIsMissing() throws Exception {
+        given(currentUserProvider.getCurrentUserId(isNull())).willThrow(
+                new ApiException(HttpStatus.UNAUTHORIZED, "AUTHENTICATION_REQUIRED", "인증이 필요합니다."));
         mockMvc.perform(get("/api/v1/companies"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("AUTHENTICATION_REQUIRED"));

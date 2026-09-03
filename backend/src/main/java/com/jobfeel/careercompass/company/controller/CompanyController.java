@@ -1,6 +1,6 @@
 package com.jobfeel.careercompass.company.controller;
 
-import com.jobfeel.careercompass.common.auth.MockCurrentUserProvider;
+import com.jobfeel.careercompass.common.auth.CurrentUserProvider;
 import com.jobfeel.careercompass.common.error.ApiException;
 import com.jobfeel.careercompass.company.dto.CompanyResponse;
 import com.jobfeel.careercompass.company.dto.CompanySearchResponse;
@@ -8,7 +8,7 @@ import com.jobfeel.careercompass.company.service.CompanyService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,26 +18,25 @@ import org.springframework.web.bind.annotation.RestController;
 public class CompanyController {
 
     private final CompanyService companyService;
-    private final MockCurrentUserProvider mockCurrentUserProvider;
+    private final CurrentUserProvider currentUserProvider;
 
     public CompanyController(
             CompanyService companyService,
-            MockCurrentUserProvider mockCurrentUserProvider
+            CurrentUserProvider currentUserProvider
     ) {
         this.companyService = companyService;
-        this.mockCurrentUserProvider = mockCurrentUserProvider;
+        this.currentUserProvider = currentUserProvider;
     }
 
     @GetMapping
     public CompanySearchResponse search(
-            @RequestHeader(value = "Authorization", required = false)
-            String authorization,
+            Authentication authentication,
             @RequestParam(required = false) String query,
             @RequestParam(required = false) String industry,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        mockCurrentUserProvider.getCurrentUserId(authorization);
+        currentUserProvider.getCurrentUserId(authentication);
         if (page < 0 || size < 1 || size > 100) {
             throw new ApiException(
                     HttpStatus.BAD_REQUEST,
@@ -50,11 +49,10 @@ public class CompanyController {
 
     @GetMapping("/{companyCode}")
     public CompanyResponse getCompany(
-            @RequestHeader(value = "Authorization", required = false)
-            String authorization,
+            Authentication authentication,
             @PathVariable String companyCode
     ) {
-        mockCurrentUserProvider.getCurrentUserId(authorization);
+        currentUserProvider.getCurrentUserId(authentication);
         return companyService.getCompany(companyCode);
     }
 }
