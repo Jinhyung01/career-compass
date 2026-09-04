@@ -91,14 +91,6 @@ cp .env.example .env
 
 `.env`에는 DB 접속 정보, 외부 노출 포트, JWT Secret, OpenAI API Key를 설정할 수 있습니다. 실제 Secret은 커밋하지 않습니다.
 
-호스트의 `5432` 포트를 이미 다른 PostgreSQL이 사용 중이라면 `.env`에서 다음 값만 변경하세요.
-
-```dotenv
-POSTGRES_PORT=5433
-```
-
-이 설정은 호스트 접속 포트만 변경합니다. Backend는 계속 Docker 내부 주소 `db:5432`로 DB에 연결합니다.
-
 ## API 요약
 
 모든 서비스 API는 `/api/v1`을 Prefix로 사용합니다.
@@ -134,10 +126,12 @@ Pull Request와 `main` push 시 GitHub Actions에서도 Frontend build와 Backen
 
 ## 팀 문서
 
-- [Architecture](docs/architecture/): 시스템·백엔드·AI 파이프라인·배포 구조 및 AI-Ready 설계
-- [Specifications](docs/specifications/): API 명세서·Use Case·사용자 흐름도·화면 흐름도
-- [Guides](docs/guides/): 개발환경 및 Git 협업 가이드
-- [Database](docs/database/): ERD
+- [Architecture 문서 보기 →](docs/architecture/): 시스템·백엔드·AI 파이프라인·배포 구조 및 AI-Ready 설계
+- [Specifications 문서 보기 →](docs/specifications/): API 명세서·Use Case·사용자 흐름도·화면 흐름도
+- [Design 문서 보기 →](docs/design/): 와이어프레임 및 디자인 시스템
+- [Guides 문서 보기 →](docs/guides/): 개발환경 및 Git 협업 가이드
+- [Database 문서 보기 →](docs/database/): ERD
+- [Troubleshooting 문서 보기 →](docs/troubleshooting/): 개발환경·구현·병합·검증 과정의 문제 해결 기록
 
 ## 협업 원칙
 
@@ -146,4 +140,4 @@ Pull Request와 `main` push 시 GitHub Actions에서도 Frontend build와 Backen
 - API 계약이나 이미 병합된 Flyway Migration을 임의로 변경하지 않습니다.
 - 작업 시작 전 최신 `main`을 반영하고, Pull Request의 CI 통과를 확인합니다.
 
-자세한 Branch·Commit·PR 규칙은 [Git Convention](docs/guides/git-convention.pdf)을 따릅니다.
+자세한 Branch·Commit·PR 규칙은 [Git Convention 보기 →](docs/guides/git-convention.pdf)를 확인하세요.
