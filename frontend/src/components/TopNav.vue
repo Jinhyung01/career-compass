@@ -1,35 +1,59 @@
 <script setup>
 import Logo from './Logo.vue'
-import { user, logout } from '../auth.js'
+import { isAuthenticated, user, logout } from '../auth.js'
 
 defineProps({ active: { type: String, default: '' } })
+const emit = defineEmits(['request-auth'])
 
 const menu = [
-  { key: 'profile', label: '컨설팅', href: '#/profile' },
+  { key: 'profile', label: '컨설팅', href: '#/profile', auth: true },
   { key: 'companies', label: '기업 정보', href: '#/companies' },
-  { key: 'report', label: '리포트', href: '#/report' }
+  { key: 'report', label: '리포트', href: '#/report', auth: true }
 ]
+
+const openMenu = (event, item) => {
+  if (item.auth && !isAuthenticated.value) {
+    event.preventDefault()
+    emit('request-auth', item.label)
+    return
+  }
+  openPublic(event, item.href.slice(1))
+}
+
+const openMyPage = event => {
+  if (!isAuthenticated.value) {
+    event.preventDefault()
+    emit('request-auth', '마이페이지')
+    return
+  }
+  openPublic(event, '/mypage')
+}
+
+const openPublic = (event, path) => {
+  event.preventDefault()
+  location.hash = `#${path}`
+}
 </script>
 
 <template>
   <header class="top">
     <div class="inner">
-      <a class="brand" href="#/"><Logo :size="26" /></a>
+      <a class="brand" href="#/" @click="openPublic($event, '/')"><Logo :size="26" /></a>
 
       <nav class="gnb">
-        <a v-for="m in menu" :key="m.key" :href="m.href" :class="{ on: active === m.key }">
+        <a v-for="m in menu" :key="m.key" :href="m.href" :class="{ on: active === m.key }" @click="openMenu($event, m)">
           {{ m.label }}
           <i></i>
         </a>
       </nav>
 
       <div class="util">
-        <a class="ghost" href="#/mypage">마이페이지</a>
+        <a class="ghost" href="#/mypage" @click="openMyPage">마이페이지</a>
         <template v-if="user">
           <span class="who num">{{ user.name }} 님</span>
           <button class="btn btn-line btn-pill btn-sm" @click="logout">로그아웃</button>
         </template>
-        <a v-else class="btn btn-mint btn-pill btn-sm" href="#/login">로그인 / 회원가입</a>
+        <a v-else class="btn btn-mint btn-pill btn-sm" href="#/login" @click="openPublic($event, '/login')">로그인 / 회원가입</a>
       </div>
     </div>
   </header>

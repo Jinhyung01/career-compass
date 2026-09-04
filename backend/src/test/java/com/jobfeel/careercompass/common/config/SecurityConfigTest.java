@@ -1,6 +1,5 @@
 package com.jobfeel.careercompass.common.config;
 
-import com.jobfeel.careercompass.common.auth.CurrentUserProvider;
 import com.jobfeel.careercompass.common.error.GlobalExceptionHandler;
 import com.jobfeel.careercompass.company.controller.CompanyController;
 import com.jobfeel.careercompass.company.dto.CompanySearchResponse;
@@ -15,7 +14,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 
 import static org.mockito.BDDMockito.given;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -23,7 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(CompanyController.class)
-@Import({SecurityConfig.class, CurrentUserProvider.class, GlobalExceptionHandler.class})
+@Import({SecurityConfig.class, GlobalExceptionHandler.class})
 class SecurityConfigTest {
 
     @Autowired
@@ -33,18 +31,11 @@ class SecurityConfigTest {
     private CompanyService companyService;
 
     @Test
-    void protectedApiRejectsMissingJwt() throws Exception {
-        mockMvc.perform(get("/api/v1/companies"))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.code").value("AUTHENTICATION_REQUIRED"));
-    }
-
-    @Test
-    void validJwtSubjectReachesProtectedApi() throws Exception {
+    void companyApiIsPublic() throws Exception {
         given(companyService.search(null, null, 0, 20))
                 .willReturn(new CompanySearchResponse(List.of(), 0, 20, 0, 0));
 
-        mockMvc.perform(get("/api/v1/companies").with(jwt().jwt(token -> token.subject("1"))))
+        mockMvc.perform(get("/api/v1/companies"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items").isArray());
     }

@@ -1,7 +1,8 @@
 <script setup>
-import { onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { api } from '../api.js'
 import { user } from '../auth.js'
-import { reports } from '../data/reports.js'
+import { formatDate } from '../data/backend.js'
 
 // 좌측 스티키 인덱스 + 아래로 길게 이어지는 섹션 구성.
 // 진단 기록(Frame 45) · 결제 내역(Frame 47)에 기본 정보 수정 섹션을 앞에 붙였다.
@@ -21,6 +22,8 @@ const profile = ref({
   job: 'AI Engineer',
   target: 'SK Hynix'
 })
+const reportItems = ref([])
+const loadError = ref('')
 
 const degrees = ['4년제 졸업 예정', '4년제 졸업', '전문대 졸업', '석사 재학', '석사 졸업']
 const roles = ['AI Engineer', '양산 기술', 'Product Designer', 'Backend Engineer', 'Data Analyst']
@@ -35,46 +38,69 @@ const save = () => {
 
 // 진단 기록 요약 — 리포트 데이터에서 직접 센다
 const FIT_LINE = 85
-const stats = [
-  { name: '진단 기업', value: new Set(reports.map(r => r.meta.companyName)).size, unit: '개' },
-  { name: '제안된 프로젝트', value: reports.reduce((n, r) => n + r.recommendedProjects.length, 0), unit: '개' },
+const stats = computed(() => [
+  { name: '진단 기업', value: new Set(reportItems.value.map(r => r.companyName).filter(Boolean)).size, unit: '개' },
+  { name: '완료 리포트', value: reportItems.value.filter(r => r.status === 'COMPLETED').length, unit: '개' },
   {
     name: '적합 기업',
-    value: new Set(reports.filter(r => r.overall.fitScore >= FIT_LINE).map(r => r.meta.companyName)).size,
+    value: new Set(reportItems.value.filter(r => Number(r.fitScore) >= FIT_LINE).map(r => r.companyName)).size,
     unit: '개',
     note: `${FIT_LINE}점 이상을 기준으로 합니다`
   }
-]
+])
 
 // id 는 src/data/reports.js 와 이어진다 — 행을 누르면 그 회차 리포트가 열린다
-const rows = [
-  { id: 'r1', date: '2026.09.03', title: 'SK Hynix AI Engineer 진단', match: '87%', delta: '+12', status: '최신', live: true },
-  { id: 'r2', date: '2026.08.08', title: 'SK Hynix 양산 기술 진단', match: '75%', delta: '+7', status: '완료' },
-  { id: 'r3', date: '2026.08.04', title: 'SK AX 반도체 · AI Engineer 진단', match: '82%', delta: '+3', status: '완료' },
-  { id: 'r4', date: '2026.08.01', title: '포스코 퓨쳐엠 반도체 · DX 진단', match: '79%', delta: '+11', status: '완료' },
-  { id: 'r5', date: '2026.07.22', title: '카카오페이 Backend Engineer 진단', match: '68%', delta: '—', status: '보관' },
-  { id: 'r6', date: '2026.07.14', title: '무신사 Data Analyst 진단', match: '71%', delta: '—', status: '보관' }
-]
+const rows = computed(() => reportItems.value.map((report, index) => ({
+  id: String(report.reportId),
+  date: formatDate(report.createdAt),
+  title: report.reportType === 'RECOMMEND'
+    ? '맞춤 기업 추천'
+    : `${report.companyName || '기업'} 적합도 분석`,
+  match: report.fitScore == null ? '-' : `${Number(report.fitScore)}%`,
+  delta: '—',
+  status: report.status === 'COMPLETED' ? (index === 0 ? '최신' : '완료') : report.status,
+  live: index === 0 && report.status === 'COMPLETED'
+})))
 
-const trend = [
-  { date: '07.14', value: 71 },
-  { date: '07.22', value: 68 },
-  { date: '08.01', value: 79 },
-  { date: '08.04', value: 82 },
-  { date: '08.08', value: 75 },
-  { date: '09.03', value: 87, last: true }
-]
+const trend = computed(() => reportItems.value
+  .filter(report => report.fitScore != null)
+  .slice()
+  .reverse()
+  .map((report, index, items) => ({
+    date: new Date(report.createdAt).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' }),
+    value: Number(report.fitScore),
+    last: index === items.length - 1
+  })))
 
-// 건바이건 결제 — 진단 1건마다 결제하므로 결제 내역은 진단 기록과 1:1이다
+// 김서현 시연 계정의 완료 리포트 6건과 결제 내역을 1:1로 보여 준다.
+// 실제 PG 연동 전까지는 이 시연용 원장을 사용한다.
 const PRICE = '₩5,900'
-const payments = rows.map(r => ({ id: r.id, date: r.date, title: r.title, amount: PRICE }))
+const payments = [
+  { id: 'payment-6', date: '2026.09.03', title: 'SK Hynix · AI Engineer 진단', amount: PRICE },
+  { id: 'payment-5', date: '2026.08.08', title: 'SK Hynix · 양산 기술 진단', amount: PRICE },
+  { id: 'payment-4', date: '2026.08.04', title: 'SK AX · AI Engineer 진단', amount: PRICE },
+  { id: 'payment-3', date: '2026.08.01', title: '포스코 퓨쳐엠 · DX 진단', amount: PRICE },
+  { id: 'payment-2', date: '2026.07.22', title: '카카오페이 · Backend Engineer 진단', amount: PRICE },
+  { id: 'payment-1', date: '2026.07.14', title: '무신사 · Data Analyst 진단', amount: PRICE }
+]
 
 // 스크롤 위치에 따라 인덱스 활성 항목을 바꾼다
 const active = ref('account')
 // 해시 라우터를 쓰기 때문에 인덱스는 앵커가 아니라 스크롤로 이동한다
 const jump = id => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 let io
-onMounted(() => {
+onMounted(async () => {
+  try {
+    const [savedProfile, reports] = await Promise.all([
+      api.getProfile().catch(requestError => requestError.code === 'PROFILE_NOT_FOUND' ? null : Promise.reject(requestError)),
+      api.reports({ page: 0, size: 100 })
+    ])
+    if (savedProfile?.desiredPosition) profile.value.job = savedProfile.desiredPosition.positionName
+    reportItems.value = reports.items
+  } catch (requestError) {
+    loadError.value = requestError.message
+  }
+
   io = new IntersectionObserver(
     es => es.forEach(e => { if (e.isIntersecting) active.value = e.target.id }),
     { rootMargin: '-30% 0px -60% 0px' }
@@ -89,6 +115,7 @@ onUnmounted(() => io?.disconnect())
 
 <template>
   <div class="pad wrap">
+    <p v-if="loadError" class="empty" role="alert">{{ loadError }}</p>
     <div class="layout">
       <!-- ══ 스티키 인덱스 ══ -->
       <aside class="index">
