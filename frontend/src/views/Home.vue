@@ -57,7 +57,6 @@ const jump = id => document.getElementById(id)?.scrollIntoView({ behavior: 'smoo
           <a class="btn btn-mint btn-lg btn-pill" href="#/profile">진단 시작하기</a>
           <button class="btn btn-ghost btn-lg btn-pill" @click="jump('why')">서비스 안내</button>
         </div>
-        <p class="tiny">진단 결과는 계정에 저장되고, 다시 진단하면 이전 결과와 비교됩니다.</p>
       </div>
 
       <!-- 히어로 위에 떠 있는 유리 카드 -->

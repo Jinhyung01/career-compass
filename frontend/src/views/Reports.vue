@@ -1,15 +1,19 @@
 <script setup>
-import { computed, ref } from 'vue'
-import { reports } from '../data/reports.js'
+import { computed, onMounted, ref } from 'vue'
+import { api } from '../api.js'
+import { formatDate, gradeOf } from '../data/backend.js'
+import { reports as mockReports } from '../data/reports.js'
 import CompanyLogo from '../components/CompanyLogo.vue'
-import { companies } from '../data/companies.js'
 
 // 진단 리포트 모아보기. #/report → 이 목록, #/report/:id → 리포트 본문.
 const query = ref('')
-const domainOf = name => companies.find(c => c.companyName === name)?.domain || ''
+const reports = ref([])
+const loading = ref(true)
+const error = ref('')
+const domainOf = () => ''
 
 const list = computed(() =>
-  [...reports]
+  [...reports.value]
     .sort((a, b) => b.meta.date.localeCompare(a.meta.date))
     .filter(r => {
       const q = query.value.trim().toLowerCase()
@@ -17,9 +21,43 @@ const list = computed(() =>
     })
 )
 
-const latest = computed(() => list.value[0] || reports[0])
-const best = computed(() => reports.reduce((a, b) => (b.overall.fitScore > a.overall.fitScore ? b : a)))
+const latest = computed(() => list.value[0] || reports.value[0] || null)
+const best = computed(() => reports.value.length
+  ? reports.value.reduce((a, b) => (b.overall.fitScore > a.overall.fitScore ? b : a))
+  : null)
 const weakest = r => r.skills.reduce((a, b) => (b.value < a.value ? b : a))
+
+onMounted(async () => {
+  try {
+    const response = await api.reports({ page: 0, size: 100 })
+    reports.value = response.items.map(item => {
+      const score = Number(item.fitScore ?? 0)
+      const isRecommendation = item.reportType === 'RECOMMEND'
+      // 목록 API에는 상세 역량·프로젝트가 없으므로, 시연용 UI 항목은 기존 더미를 보조로 유지한다.
+      const mock = mockReports.find(report => report.id === String(item.reportId)) ||
+        mockReports.find(report => report.meta.companyName === item.companyName)
+      return {
+        ...(mock || {}),
+        id: String(item.reportId),
+        meta: {
+          ...(mock?.meta || {}),
+          companyName: item.companyName || '맞춤 기업 추천',
+          positionName: isRecommendation ? '기업 추천' : (mock?.meta.positionName || '적합도 분석'),
+          code: mock?.meta.code || `JP-${String(item.reportId).padStart(4, '0')}`,
+          date: formatDate(item.createdAt)
+        },
+        overall: { fitScore: score, grade: isRecommendation ? '추천' : gradeOf(score) },
+        headline: item.status === 'COMPLETED' ? '분석이 완료되었습니다.' : `분석 상태: ${item.status}`,
+        skills: mock?.skills || [{ name: isRecommendation ? '추천 결과' : '종합 적합도', value: score }],
+        recommendedProjects: mock?.recommendedProjects || []
+      }
+    })
+  } catch (requestError) {
+    error.value = requestError.message
+  } finally {
+    loading.value = false
+  }
+})
 </script>
 
 <template>
@@ -30,7 +68,10 @@ const weakest = r => r.skills.reduce((a, b) => (b.value < a.value ? b : a))
       <p class="page-desc">진단할 때마다 리포트가 한 건씩 쌓입니다. 점수보다 어떤 항목이 바뀌었는지를 보세요.</p>
     </header>
 
-    <div class="summary card-dark stagger">
+    <p v-if="loading" class="empty">리포트를 불러오는 중입니다.</p>
+    <p v-if="error" class="empty" role="alert">{{ error }}</p>
+
+    <div v-if="reports.length" class="summary card-dark stagger">
       <div>
         <p class="cap">누적 리포트</p>
         <p class="v num">{{ reports.length }}<em>건</em></p>
@@ -57,7 +98,7 @@ const weakest = r => r.skills.reduce((a, b) => (b.value < a.value ? b : a))
       <button class="btn btn-dark btn-pill">검색</button>
     </form>
 
-    <div v-if="list.length" class="rows stagger">
+    <div v-if="!loading && !error && list.length" class="rows stagger">
       <a v-for="r in list" :key="r.id" class="row" :href="'#/report/' + r.id">
         <CompanyLogo :name="r.meta.companyName" :domain="domainOf(r.meta.companyName)" :size="46" />
 
@@ -77,7 +118,7 @@ const weakest = r => r.skills.reduce((a, b) => (b.value < a.value ? b : a))
         </div>
       </a>
     </div>
-    <p v-else class="empty">검색 조건에 맞는 리포트가 없습니다.</p>
+    <p v-else-if="!loading && !error" class="empty">검색 조건에 맞는 리포트가 없습니다.</p>
   </div>
 </template>
 

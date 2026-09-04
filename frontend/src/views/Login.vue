@@ -1,17 +1,50 @@
 <script setup>
 import { ref } from 'vue'
 import AuthAside from '../components/AuthAside.vue'
-import { login } from '../auth.js'
+import { api } from '../api.js'
+import { startDemoSession, startSession } from '../auth.js'
 
 const mode = ref('login')
 const name = ref('')
 const email = ref('')
+const password = ref('')
+const passwordConfirm = ref('')
+const agreed = ref(false)
+const loading = ref(false)
+const error = ref('')
 
-// 프로토타입: 서버 인증 없이 로컬 세션만 만든다. 실 API 연동 시 api.login/register 로 교체.
-const submit = () => {
-  login({ name: name.value.trim() || email.value.split('@')[0] || '김서현', email: email.value.trim() || 'name@email.com' })
-  // 로그인은 메인으로, 가입은 바로 프로필 입력으로 보낸다
-  location.hash = mode.value === 'login' ? '#/' : '#/profile'
+const submit = async () => {
+  error.value = ''
+  if (mode.value === 'signup' && password.value !== passwordConfirm.value) {
+    error.value = '비밀번호 확인이 일치하지 않습니다.'
+    return
+  }
+  if (mode.value === 'signup' && !agreed.value) {
+    error.value = '이용약관과 개인정보 처리방침에 동의해 주세요.'
+    return
+  }
+
+  loading.value = true
+  try {
+    const credentials = { email: email.value.trim(), password: password.value }
+    if (mode.value === 'signup') {
+      await api.register({ ...credentials, name: name.value.trim() })
+    }
+    const response = await api.login(credentials)
+    startSession(response, credentials.email)
+    location.hash = mode.value === 'login' ? '#/' : '#/profile'
+  } catch (requestError) {
+    error.value = requestError.message
+  } finally {
+    loading.value = false
+  }
+}
+
+const socialNotice = () => { error.value = '소셜 로그인은 아직 지원하지 않습니다.' }
+
+const startDemo = () => {
+  startDemoSession()
+  location.hash = '#/'
 }
 </script>
 
@@ -43,29 +76,35 @@ const submit = () => {
 
       <label class="label" for="pw">비밀번호</label>
       <input
-        id="pw" class="field" type="password"
+        id="pw" v-model="password" class="field" type="password"
         :placeholder="mode === 'login' ? '비밀번호를 입력하세요' : '영문·숫자 조합 8자 이상'"
         autocomplete="current-password"
       />
 
       <template v-if="mode === 'signup'">
         <label class="label" for="pw2">비밀번호 확인</label>
-        <input id="pw2" class="field" type="password" placeholder="한 번 더 입력하세요" autocomplete="new-password" />
-        <label class="agree"><input type="checkbox" /> 이용약관과 개인정보 처리방침에 동의합니다.</label>
+        <input id="pw2" v-model="passwordConfirm" class="field" type="password" placeholder="한 번 더 입력하세요" autocomplete="new-password" />
+        <label class="agree"><input v-model="agreed" type="checkbox" /> 이용약관과 개인정보 처리방침에 동의합니다.</label>
       </template>
       <div v-else class="links">
         <a href="#/login">비밀번호를 잊으셨나요?</a>
       </div>
 
-      <button class="btn btn-dark btn-lg btn-block btn-pill" @click="submit">
-        {{ mode === 'login' ? '로그인' : '가입하고 진단 시작하기' }}
+      <p v-if="error" class="form-error" role="alert">{{ error }}</p>
+
+      <button class="btn btn-dark btn-lg btn-block btn-pill" :disabled="loading" @click="submit">
+        {{ loading ? '처리 중…' : mode === 'login' ? '로그인' : '가입하고 진단 시작하기' }}
+      </button>
+
+      <button v-if="mode === 'login'" class="btn btn-line btn-block btn-pill demo" @click="startDemo">
+        김서현 시연 계정으로 둘러보기
       </button>
 
       <div class="or"><span>또는</span></div>
 
-      <button class="btn btn-block sns kakao" @click="submit">카카오로 계속하기</button>
-      <button class="btn btn-block sns google" @click="submit">구글로 계속하기</button>
-      <button class="btn btn-block sns naver" @click="submit">네이버로 계속하기</button>
+      <button class="btn btn-block sns kakao" @click="socialNotice">카카오로 계속하기</button>
+      <button class="btn btn-block sns google" @click="socialNotice">구글로 계속하기</button>
+      <button class="btn btn-block sns naver" @click="socialNotice">네이버로 계속하기</button>
 
       <p class="foot-note">
         업로드 파일은 용도 외에 이용되지 않습니다.
@@ -115,6 +154,8 @@ const submit = () => {
 
 h1 { font-size: clamp(24px, 2.6vw, 32px); font-weight: 800; margin: 0; letter-spacing: -0.04em; }
 .lead { font-size: 15px; color: var(--g2); margin: 12px 0 28px; }
+.form-error { margin: 18px 0; color: #A4222A; font-size: 13px; font-weight: 700; }
+.demo { margin-top: 10px; }
 .label { margin-top: 22px; }
 .agree { display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--g1); margin: 26px 0 22px; }
 .links { display: flex; justify-content: flex-end; margin: 14px 0 26px; }

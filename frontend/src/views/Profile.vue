@@ -1,9 +1,10 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import ConsultAside from '../components/ConsultAside.vue'
 import AnalyzingModal from '../components/AnalyzingModal.vue'
 import PaymentModal from '../components/PaymentModal.vue'
-import { companies as allCompanies } from '../data/companies.js'
+import { api, waitForReport } from '../api.js'
+import { fetchAllCompanies, positionOptions, techOptions } from '../data/backend.js'
 
 // UC-S02 내 정보 입력 / 수정 — 대조의 기준이 되는 쪽은 공고가 아니라 나다.
 // STEP 01 / 02  기업 · 직무 · 기술 스택
@@ -13,17 +14,20 @@ const paying = ref(false)
 // 건바이건 결제 목업 — 결제 완료 전엔 "결제하기", 완료 후엔 "진단하기"로 버튼이 바뀐다
 const paidDone = ref(false)
 const analyzing = ref(false)
+const analysisAnimationDone = ref(false)
+const completedReport = ref(null)
+const loading = ref(true)
+const error = ref('')
 
-// 지원 기업·직무 선택지는 기업관과 같은 더미 데이터에서 뽑는다
-const companies = allCompanies.map(c => c.companyName)
-const roles = [...new Set(allCompanies.flatMap(c => c.jobs.map(j => j.name)))].sort()
-const allStacks = ['Python', 'RAG', 'FastAPI', 'PyTorch', 'Kubernetes', 'Airflow', 'SQL', 'React', 'TypeScript']
+const companies = ref([])
+const roles = positionOptions
+const allStacks = techOptions
 const degrees = ['4년제 졸업 예정', '4년제 졸업', '전문대 졸업', '석사 재학', '석사 졸업']
 
 const form = ref({
-  company: 'SK Hynix',
-  role: 'AI Engineer',
-  stacks: ['Python', 'RAG', 'FastAPI'],
+  company: 'C001',
+  role: 10,
+  stacks: [101, 102, 103],
   degree: '4년제 졸업 예정',
   careers: [
     { company: 'SK ATX', period: '2025.01 - 2025.12', type: '인턴, 퇴직', role: 'Product Engineer' },
@@ -35,7 +39,14 @@ const form = ref({
 })
 
 const certInput = ref('')
-const picked = computed(() => allCompanies.find(c => c.companyName === form.value.company) || allCompanies[0])
+const picked = computed(() => companies.value.find(c => c.companyCode === form.value.company) || {
+  companyCode: form.value.company,
+  companyName: '선택한 기업',
+  people: 0,
+  insight: 0,
+  interviewed: '-'
+})
+const selectedRoleName = computed(() => roles.find(role => role.id === form.value.role)?.name || '')
 
 const toggle = (list, v) => {
   const i = list.indexOf(v)
@@ -70,11 +81,91 @@ const agent = computed(() => step.value === 1
     })
 
 const goStep = n => { step.value = n; window.scrollTo({ top: 0, behavior: 'smooth' }) }
-// 결제 전엔 결제창을 띄우고, 결제 완료 후엔 같은 버튼이 분석을 시작한다
-const cta = () => { paidDone.value ? (analyzing.value = true) : (paying.value = true) }
-const onPaid = () => { paying.value = false; paidDone.value = true }
-// 진단이 끝나면 방금 만든 리포트로 바로 이동한다 (목록이 아니라 상세)
-const done = () => { analyzing.value = false; location.hash = '#/report/r1' }
+
+const profileContents = () => {
+  const contents = []
+  if (form.value.project.trim()) {
+    contents.push({ category: 'PROJECT', content: form.value.project.trim() })
+  }
+  const experience = form.value.careers
+    .map(career => [career.company, career.period, career.type, career.role].filter(Boolean).join(' · '))
+    .filter(Boolean)
+    .join('\n')
+  if (experience) contents.push({ category: 'EXPERIENCE', content: experience })
+
+  const study = [form.value.degree, ...form.value.certs].filter(Boolean).join(' · ')
+  if (study) contents.push({ category: 'STUDY', content: study })
+  return contents
+}
+
+const saveProfile = () => api.saveProfile({
+  desiredPositionId: form.value.role,
+  techIds: form.value.stacks,
+  contents: profileContents()
+})
+
+const finishAnalysis = () => {
+  if (!analysisAnimationDone.value || !completedReport.value) return
+  analyzing.value = false
+  location.hash = `#/report/${completedReport.value.reportId}`
+}
+
+const onAnalysisAnimationDone = () => {
+  analysisAnimationDone.value = true
+  finishAnalysis()
+}
+
+const startAnalysis = async () => {
+  error.value = ''
+  analyzing.value = true
+  analysisAnimationDone.value = false
+  completedReport.value = null
+  try {
+    await saveProfile()
+    const accepted = await api.createReport({
+      reportType: 'FIT_ANALYSIS',
+      companyCode: form.value.company
+    })
+    completedReport.value = await waitForReport(accepted.reportId)
+    finishAnalysis()
+  } catch (requestError) {
+    error.value = requestError.message
+    analyzing.value = false
+  }
+}
+
+const cta = () => { paidDone.value ? startAnalysis() : (paying.value = true) }
+const onPaid = () => {
+  paying.value = false
+  paidDone.value = true
+  startAnalysis()
+}
+
+onMounted(async () => {
+  try {
+    companies.value = await fetchAllCompanies()
+    const selected = JSON.parse(sessionStorage.getItem('jobpill.selectedCompany') || 'null')
+    if (selected?.companyCode && companies.value.some(c => c.companyCode === selected.companyCode)) {
+      form.value.company = selected.companyCode
+      sessionStorage.removeItem('jobpill.selectedCompany')
+    } else if (!companies.value.some(c => c.companyCode === form.value.company) && companies.value.length) {
+      form.value.company = companies.value[0].companyCode
+    }
+
+    try {
+      const profile = await api.getProfile()
+      form.value.role = profile.desiredPosition?.positionId || form.value.role
+      form.value.stacks = profile.techStacks.map(stack => stack.techId)
+      form.value.project = profile.contents.find(content => content.category === 'PROJECT')?.content || ''
+    } catch (requestError) {
+      if (requestError.code !== 'PROFILE_NOT_FOUND') throw requestError
+    }
+  } catch (requestError) {
+    error.value = requestError.message
+  } finally {
+    loading.value = false
+  }
+})
 </script>
 
 <template>
@@ -85,6 +176,8 @@ const done = () => { analyzing.value = false; location.hash = '#/report/r1' }
       <!-- ═══ 입력 ═══ -->
       <section class="main reveal">
         <p class="eyebrow">STEP {{ step === 1 ? '01' : '02' }} / 02 · 프로필</p>
+        <p v-if="loading" class="desc">프로필과 기업 정보를 불러오는 중입니다.</p>
+        <p v-if="error" class="form-error" role="alert">{{ error }}</p>
 
         <!-- STEP 01 / 02 -->
         <template v-if="step === 1">
@@ -93,23 +186,23 @@ const done = () => { analyzing.value = false; location.hash = '#/report/r1' }
 
           <label class="label" for="company">지원 기업</label>
           <select id="company" v-model="form.company" class="field">
-            <option v-for="c in companies" :key="c">{{ c }}</option>
+            <option v-for="c in companies" :key="c.companyCode" :value="c.companyCode">{{ c.companyName }}</option>
           </select>
 
           <label class="label" for="role">희망 직무</label>
           <select id="role" v-model="form.role" class="field">
-            <option v-for="r in roles" :key="r">{{ r }}</option>
+            <option v-for="r in roles" :key="r.id" :value="r.id">{{ r.name }}</option>
           </select>
 
           <p class="label">기술 스택 <span class="opt">중복 선택 가능</span></p>
           <div class="chips">
             <button
               v-for="t in allStacks"
-              :key="t"
+              :key="t.id"
               class="chip"
-              :class="{ on: form.stacks.includes(t) }"
-              @click="toggle(form.stacks, t)"
-            >{{ t }}</button>
+              :class="{ on: form.stacks.includes(t.id) }"
+              @click="toggle(form.stacks, t.id)"
+            >{{ t.name }}</button>
           </div>
 
           <div class="foot-btns">
@@ -202,8 +295,13 @@ const done = () => { analyzing.value = false; location.hash = '#/report/r1' }
       </aside>
     </div>
 
-    <PaymentModal v-if="paying" :company="form.company" :role="form.role" @paid="onPaid" @close="paying = false" />
-    <AnalyzingModal v-if="analyzing" :company="form.company" :role="form.role" @done="done" />
+    <PaymentModal v-if="paying" :company="picked.companyName" :role="selectedRoleName" @paid="onPaid" @close="paying = false" />
+    <AnalyzingModal
+      v-if="analyzing"
+      :company="picked.companyName"
+      :role="selectedRoleName"
+      @done="onAnalysisAnimationDone"
+    />
   </div>
 </template>
 
@@ -216,6 +314,7 @@ const done = () => { analyzing.value = false; location.hash = '#/report/r1' }
 .main { flex: 1 1 auto; padding: 44px 52px 40px; max-width: 720px; }
 h1 { font-size: clamp(26px, 3.2vw, 40px); font-weight: 800; line-height: 1.15; margin: 12px 0 0; letter-spacing: -0.04em; }
 .desc { font-size: 15px; line-height: 1.7; color: var(--g2); margin: 12px 0 40px; max-width: 52ch; }
+.form-error { margin: 14px 0; color: #A4222A; font-size: 13px; font-weight: 700; }
 .main .label, .main p.label { margin-top: 28px; }
 .opt { font-weight: 400; font-size: 12px; color: var(--g4); }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }

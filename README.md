@@ -4,7 +4,8 @@
 
 Job Pill은 사용자의 희망 직무, 기술 스택, 프로젝트 경험과 기업 인사이트를 비교하여 기업 추천과 적합도 분석 리포트를 제공합니다.
 
-현재 회원 인증, 프로필 관리, 기업 조회, 분석 리포트 생성·조회 및 PDF 출력 흐름이 구현되어 있습니다. 분석 서술과 유사도 계산은 Mock으로 동작하며, 실제 OpenAI API는 아직 호출하지 않습니다.
+현재 회원 인증, 프로필 관리, 기업 조회, 분석 리포트 생성·조회 및 PDF 출력 흐름이 구현되어 있습니다.
+실제 OpenAI API는 아직 호출하지 않습니다.
 
 ## 주요 기능
 
@@ -100,14 +101,14 @@ cp .env.example .env
 | POST | `/api/v1/auth/register` | 회원가입 | 불필요 |
 | POST | `/api/v1/auth/login` | 로그인 | 불필요 |
 | GET, PUT | `/api/v1/me/profile` | 내 프로필 조회·수정 | 필요 |
-| GET | `/api/v1/companies` | 기업 검색 | 필요 |
-| GET | `/api/v1/companies/{companyCode}` | 기업 상세 조회 | 필요 |
+| GET | `/api/v1/companies` | 기업 검색 | 불필요 |
+| GET | `/api/v1/companies/{companyCode}` | 기업 상세 조회 | 불필요 |
 | POST | `/api/v1/reports` | 분석 리포트 생성 | 필요 |
 | GET | `/api/v1/reports` | 리포트 목록 조회 | 필요 |
 | GET | `/api/v1/reports/{reportId}` | 리포트 상세 조회 | 필요 |
 | GET | `/api/v1/reports/{reportId}/file` | PDF 파일 다운로드 | 필요 |
 
-상세 Endpoint와 요청·응답 형식은 [API 명세서 v3](docs/specifications/api-spec-v3.pdf)를 확인하세요.
+상세 Endpoint와 요청·응답 형식은 [API 명세서 v3 ->](docs/specifications/api-spec-v3.pdf)를 확인하세요.
 
 ## 테스트와 빌드
 
@@ -125,13 +126,13 @@ cd backend
 Pull Request와 `main` push 시 GitHub Actions에서도 Frontend build와 Backend test가 실행됩니다.
 
 ## 팀 문서
+[Notion 팀 문서 보기 →](https://app.notion.com/p/Jobpill-287eb9bf28ac835e813f015237e01e05)
 
 - [Architecture 문서 보기 →](docs/architecture/): 시스템·백엔드·AI 파이프라인·배포 구조 및 AI-Ready 설계
 - [Specifications 문서 보기 →](docs/specifications/): API 명세서·Use Case·사용자 흐름도·화면 흐름도
 - [Design 문서 보기 →](docs/design/): 와이어프레임 및 디자인 시스템
 - [Guides 문서 보기 →](docs/guides/): 개발환경 및 Git 협업 가이드
 - [Database 문서 보기 →](docs/database/): ERD
-- [Troubleshooting 문서 보기 →](docs/troubleshooting/): 개발환경·구현·병합·검증 과정의 문제 해결 기록
 
 ## 협업 원칙
 

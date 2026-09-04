@@ -1,23 +1,72 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { byCode } from '../data/companies.js'
-import { matchByCompany } from '../data/reports.js'
+import { api } from '../api.js'
+import { hasApiSession } from '../auth.js'
+import { enrichCompany } from '../data/backend.js'
 import CompanyLogo from '../components/CompanyLogo.vue'
 
 // UC-S05 특정 기업 적합도 분석 — #/company/:companyCode 로 들어온 기업 하나를 보여준다.
 const code = ref(location.hash.split('/')[2] || '')
-const sync = () => { code.value = location.hash.split('/')[2] || '' }
-onMounted(() => window.addEventListener('hashchange', sync))
+const co = ref({
+  companyCode: '', companyName: '', industry: '', role: '', people: 0, insight: 0,
+  interviewed: '-', freshness: 0, jobs: [], culture: [], domain: ''
+})
+const reports = ref([])
+const loading = ref(true)
+const error = ref('')
+
+const load = async () => {
+  loading.value = true
+  error.value = ''
+  try {
+    const company = await api.company(code.value)
+    co.value = enrichCompany(company)
+    // 기업 상세는 공개 화면이다. 로그인한 경우에만 개인 진단 결과를 표시한다.
+    reports.value = hasApiSession.value
+      ? (await api.reports({ status: 'COMPLETED', page: 0, size: 100 })).items
+      : []
+  } catch (requestError) {
+    error.value = requestError.message
+  } finally {
+    loading.value = false
+  }
+}
+
+const sync = () => {
+  code.value = location.hash.split('/')[2] || ''
+  load()
+}
+onMounted(() => {
+  window.addEventListener('hashchange', sync)
+  load()
+})
 onUnmounted(() => window.removeEventListener('hashchange', sync))
 
-const co = computed(() => byCode(code.value))
 const jobs = computed(() => co.value.jobs)
 const culture = computed(() => co.value.culture)
-// match 점수는 진단을 실행한 기업에만 존재한다
-const diag = computed(() => matchByCompany[co.value.companyName] || null)
+const diag = computed(() => {
+  const report = reports.value.find(item =>
+    item.reportType === 'FIT_ANALYSIS' && item.companyCode === co.value.companyCode)
+  return report ? {
+    id: report.reportId,
+    score: Number(report.fitScore),
+    date: new Date(report.createdAt).toLocaleDateString('ko-KR'),
+    role: '적합도 분석'
+  } : null
+})
+
+const chooseCompany = () => {
+  sessionStorage.setItem('jobpill.selectedCompany', JSON.stringify({
+    companyCode: co.value.companyCode,
+    companyName: co.value.companyName
+  }))
+}
 </script>
 
 <template>
+  <p v-if="loading" class="pad empty">기업 정보를 불러오는 중입니다.</p>
+  <p v-if="error" class="pad empty" role="alert">{{ error }}</p>
+
   <section class="banner">
     <div class="pad banner-inner">
       <div class="id">
@@ -29,7 +78,7 @@ const diag = computed(() => matchByCompany[co.value.companyName] || null)
             {{ co.role }} · 현직자 {{ co.people }}명 · 인사이트 {{ co.insight }}건 · 최근 인터뷰 {{ co.interviewed }}
           </p>
           <div class="cta">
-            <a class="btn btn-mint btn-pill" href="#/profile">이 기업으로 진단하기</a>
+            <a class="btn btn-mint btn-pill" href="#/profile" @click="chooseCompany">이 기업으로 진단하기</a>
             <button class="btn btn-ghost btn-pill">관심 기업에 담기</button>
           </div>
         </div>
@@ -54,7 +103,7 @@ const diag = computed(() => matchByCompany[co.value.companyName] || null)
         <p class="section-note">직무마다 현직자가 꼽은 요구 항목이 다릅니다. 진단을 실행하면 이 항목과 내 프로필을 대조합니다.</p>
       </div>
       <div class="jobs stagger">
-        <a v-for="j in jobs" :key="j.name" class="card card-lift job" href="#/profile">
+        <a v-for="j in jobs" :key="j.name" class="card card-lift job" href="#/profile" @click="chooseCompany">
           <div class="job-head">
             <h3>{{ j.name }}</h3>
           </div>
@@ -91,7 +140,7 @@ const diag = computed(() => matchByCompany[co.value.companyName] || null)
               부족한 항목을 채우고 다시 진단하면 점수 변화를 이전 리포트와 비교해 확인할 수 있습니다.
             </p>
             <a class="btn btn-mint btn-block btn-pill" :href="'#/report/' + diag.id">리포트 열어보기</a>
-            <a class="btn btn-line btn-block btn-pill more" href="#/profile">다시 진단하기</a>
+            <a class="btn btn-line btn-block btn-pill more" href="#/profile" @click="chooseCompany">다시 진단하기</a>
           </template>
           <template v-else>
             <p class="eyebrow">아직 진단하지 않은 기업</p>
@@ -100,7 +149,7 @@ const diag = computed(() => matchByCompany[co.value.companyName] || null)
               {{ co.companyName }}의 현직자 {{ co.people }}명이 말한 요구 항목과 내 프로필을 대조해야
               이 기업 기준 점수를 계산할 수 있습니다.
             </p>
-            <a class="btn btn-mint btn-block btn-pill" href="#/profile">진단 시작하기</a>
+            <a class="btn btn-mint btn-block btn-pill" href="#/profile" @click="chooseCompany">진단 시작하기</a>
           </template>
         </div>
 

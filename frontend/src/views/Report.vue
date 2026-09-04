@@ -1,6 +1,9 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { reportById } from '../data/reports.js'
+import { api, saveBlob } from '../api.js'
+import { formatDate, gradeOf } from '../data/backend.js'
+import { reportById, reports as mockReports } from '../data/reports.js'
+import { user } from '../auth.js'
 
 // 컨설팅과 별개 탭. #/report/:id 로 이전 진단 결과도 열람할 수 있다 (기본값 r1).
 // 사용자 모집단 DB 가 없어 백분위·비교 모수·지원자 등급 분포는 두지 않는다.
@@ -8,11 +11,16 @@ import { reportById } from '../data/reports.js'
 // 종합 결과 → 역량 프로파일 → 세부 역량 → 강점·보완점 → 현직자 요구 항목
 // → 직무 적합도 → 우선 보완 과제 → 추천 프로젝트 → 이력서 → 예상 질문
 const id = ref(location.hash.split('/')[2] || 'r1')
-const sync = () => { id.value = location.hash.split('/')[2] || 'r1' }
+const sync = () => {
+  id.value = location.hash.split('/')[2] || 'r1'
+  load()
+}
 onMounted(() => window.addEventListener('hashchange', sync))
 onUnmounted(() => window.removeEventListener('hashchange', sync))
 
-const r = computed(() => reportById(id.value))
+const r = ref(reportById('r1'))
+const loading = ref(true)
+const error = ref('')
 const meta = computed(() => r.value.meta)
 const overall = computed(() => r.value.overall)
 const skills = computed(() => r.value.skills)
@@ -26,12 +34,141 @@ const actions = computed(() => r.value.actions)
 const resumePoints = computed(() => r.value.resumeHighlights)
 const questions = computed(() => r.value.questions)
 
-const savePdf = () => window.print()
+const percent = (value, max) => Math.round((Number(value || 0) / max) * 100)
+const judgment = score => score >= 80
+  ? { judge: '우수', tone: 'good' }
+  : score >= 60 ? { judge: '보통', tone: 'mid' } : { judge: '보완', tone: 'bad' }
+
+const mapFitReport = response => {
+  const result = response.result || {}
+  const detail = result.scoreDetail || {}
+  const score = Number(response.fitScore || 0)
+  const demoReport = mockReports.find(item => item.id === String(response.reportId))
+  const base = demoReport || mockReports.find(item => item.meta.companyName === result.companyName) || reportById('r1')
+  const scores = [
+    { name: '기술 스택', value: percent(detail.techScore, 30) },
+    { name: '희망 직무', value: percent(detail.positionScore, 20) },
+    { name: '프로젝트 경험', value: percent(detail.projectExperienceScore, 30) },
+    { name: '조직 문화', value: percent(detail.cultureScore, 20) }
+  ]
+
+  return {
+    ...base,
+    id: String(response.reportId),
+    meta: {
+      name: user.value?.name || '사용자',
+      companyName: result.companyName || '분석 기업',
+      positionName: result.positionName || '희망 직무',
+      code: demoReport?.meta.code || `JP-${String(response.reportId).padStart(4, '0')}`,
+      date: formatDate(response.createdAt)
+    },
+    overall: { fitScore: score, grade: gradeOf(score) },
+    headline: result.preparationDirection || '프로필과 기업 정보를 기준으로 분석했습니다.',
+    skills: scores.map(item => ({ ...item, weak: item.value < 60 })),
+    details: scores.map(item => ({
+      group: '적합도 구성',
+      name: item.name,
+      score: item.value,
+      ...judgment(item.value)
+    })),
+    insight: {
+      title: result.preparationDirection || '분석 결과를 확인하세요.',
+      lines: result.fitReasons || []
+    },
+    strengths: result.strengths || [],
+    gaps: result.gaps || [],
+    jobFit: [{ rank: 1, job: result.positionName || '희망 직무', score, note: '현재 분석 결과' }],
+    actions: [...(result.recommendedLearning || []), result.preparationDirection]
+      .filter(Boolean)
+      .map((title, index) => ({ no: String(index + 1).padStart(2, '0'), title, meta: '추천' })),
+    recommendedProjects: (result.recommendedProjects || []).map((title, index) => ({
+      no: `P${index + 1}`,
+      title,
+      tag: 'AI 추천',
+      source: '현재 프로필과 기업 분석 결과',
+      why: result.preparationDirection || '부족한 역량을 보완하기 위한 프로젝트입니다.',
+      todo: result.recommendedLearning || [],
+      output: '프로젝트 결과물과 회고',
+      weeks: '직접 계획',
+      resume: title
+    })),
+    resumeHighlights: (result.resumeHighlights || []).map(text => ({
+      before: '기존 이력서 문장',
+      after: text,
+      why: '분석 결과에서 강조할 수 있는 항목입니다.'
+    }))
+  }
+}
+
+const mapRecommendationReport = response => {
+  const recommendations = response.result?.recommendations || []
+  const first = recommendations[0] || {}
+  const base = reportById('r1')
+  return {
+    ...base,
+    id: String(response.reportId),
+    meta: {
+      name: user.value?.name || '사용자',
+      companyName: '맞춤 기업 추천',
+      positionName: first.positionName || '희망 직무',
+      code: `JP-${String(response.reportId).padStart(4, '0')}`,
+      date: formatDate(response.createdAt)
+    },
+    overall: { fitScore: 0, grade: '추천' },
+    headline: `${recommendations.length}개 기업을 추천했습니다.`,
+    strengths: first.strengths || [],
+    gaps: first.gaps || [],
+    actions: (first.recommendedActions || []).map((title, index) => ({
+      no: String(index + 1).padStart(2, '0'), title, meta: '추천'
+    })),
+    recommendedProjects: recommendations.map(item => ({
+      no: `#${item.rank}`,
+      title: item.companyName,
+      tag: item.positionName,
+      source: item.reason,
+      why: item.preparationDirection,
+      todo: item.recommendedActions,
+      output: '지원 준비 계획',
+      weeks: '직접 계획',
+      resume: item.strengths.join(', ')
+    }))
+  }
+}
+
+const load = async () => {
+  loading.value = true
+  error.value = ''
+  try {
+    const response = await api.report(id.value)
+    r.value = response.reportType === 'FIT_ANALYSIS'
+      ? mapFitReport(response)
+      : mapRecommendationReport(response)
+  } catch (requestError) {
+    error.value = requestError.message
+  } finally {
+    loading.value = false
+  }
+}
+
+const savePdf = async () => {
+  error.value = ''
+  try {
+    const blob = await api.downloadFile(id.value)
+    saveBlob(blob, `jobpill-report-${id.value}.pdf`)
+  } catch (requestError) {
+    error.value = requestError.message
+  }
+}
+
+onMounted(load)
 </script>
 
 <template>
+  <p v-if="loading" class="pad body">리포트를 불러오는 중입니다.</p>
+  <p v-if="error" class="pad body" role="alert">{{ error }}</p>
+
   <!-- ═══ 1 페이지 ═══ -->
-  <div class="print-page">
+  <div v-if="!loading && !error" class="print-page">
     <section class="banner">
       <div class="pad banner-inner">
         <div>
@@ -118,7 +255,7 @@ const savePdf = () => window.print()
   </div>
 
   <!-- ═══ 2 페이지 ═══ -->
-  <div class="print-page">
+  <div v-if="!loading && !error" class="print-page">
     <div class="pad body top-gap">
       <h2 class="section-title">강점과 보완점</h2>
       <div class="sg">
@@ -167,7 +304,7 @@ const savePdf = () => window.print()
   </div>
 
   <!-- ═══ 3 페이지 ═══ -->
-  <div class="print-page">
+  <div v-if="!loading && !error" class="print-page">
     <div class="pad body top-gap">
       <h2 class="section-title">우선 보완 과제</h2>
       <p class="section-note">보완점 중 가장 먼저 손대야 하는 순서입니다.</p>
@@ -215,7 +352,7 @@ const savePdf = () => window.print()
   </div>
 
   <!-- ═══ 4 페이지 ═══ -->
-  <div class="print-page">
+  <div v-if="!loading && !error" class="print-page">
     <div class="pad body top-gap">
       <h2 class="section-title">이력서 문장 고치기</h2>
       <p class="section-note">문장을 새로 쓰지 말고, 있는 문장을 이렇게 바꾸세요.</p>

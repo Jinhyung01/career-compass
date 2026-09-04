@@ -1,22 +1,32 @@
 <script setup>
 import { onMounted, onUnmounted, ref } from 'vue'
+import { api } from '../api.js'
+import { formatDate } from '../data/backend.js'
 
 // GPT 세션 목록 스타일. 스티키 없이 본문과 같이 스크롤되고,
 // '전체 기록 보기'를 누르면 접혀 있던 이전 세션이 펼쳐진다.
 // matched: 'company' 는 기업이, 'role' 은 직무가 진단 결과와 매치된 세션이다.
 // 표기 위치는 Figma clipboard 32 의 사이드바를 따른다.
 // id 는 src/data/reports.js 의 리포트와 1:1 로 이어진다 — 눌러서 그 회차를 열람할 수 있다.
-const sessions = [
-  { id: 'r1', company: 'SK Hynix', role: 'AI Engineer', date: '2026.09.03' },
-  { id: 'r2', company: 'SK Hynix', role: '양산 기술', date: '2026.08.08', matched: 'role' },
-  { id: 'r4', company: '포스코 퓨쳐엠', role: '반도체 · DX', date: '2026.08.01', matched: 'company' },
-  { id: 'r5', company: '카카오페이', role: 'Backend Engineer', date: '2026.07.22', fold: true },
-  { id: 'r6', company: '무신사', role: 'Data Analyst', date: '2026.07.14', fold: true }
-]
+const sessions = ref([])
 
 const current = ref(location.hash.split('/')[2] || '')
 const sync = () => { current.value = location.hash.split('/')[2] || '' }
-onMounted(() => window.addEventListener('hashchange', sync))
+onMounted(async () => {
+  window.addEventListener('hashchange', sync)
+  try {
+    const response = await api.reports({ page: 0, size: 100 })
+    sessions.value = response.items.map((report, index) => ({
+      id: String(report.reportId),
+      company: report.companyName || '맞춤 기업 추천',
+      role: report.reportType === 'RECOMMEND' ? '기업 추천' : '적합도 분석',
+      date: formatDate(report.createdAt),
+      fold: index >= 3
+    }))
+  } catch {
+    sessions.value = []
+  }
+})
 onUnmounted(() => window.removeEventListener('hashchange', sync))
 
 const open = ref(false)

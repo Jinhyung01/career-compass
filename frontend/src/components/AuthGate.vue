@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 
 const props = defineProps({ label: { type: String, default: '이 메뉴' } })
+const emit = defineEmits(['close'])
 
 // 받침 유무에 따라 조사를 고른다 — '리포트은'/'마이페이지은' 같은 표기를 막는다
 const topic = computed(() => {
@@ -12,21 +13,29 @@ const topic = computed(() => {
 </script>
 
 <template>
-  <div class="modal-scrim" role="alertdialog" aria-modal="true" aria-labelledby="gate-title">
+  <div class="modal-scrim gate-scrim" role="alertdialog" aria-modal="true" aria-labelledby="gate-title" @click.self="emit('close')">
     <div class="modal-box gate">
+      <button class="close" type="button" aria-label="닫기" @click="emit('close')">×</button>
       <p class="err">로그인 필요</p>
       <h2 id="gate-title">{{ label }}{{ topic }} 로그인 후 이용할 수 있습니다.</h2>
       <p class="d">진단 기록과 리포트는 계정에 저장되기 때문에, 로그인한 상태에서만 열람할 수 있습니다.</p>
       <div class="row">
-        <a class="btn btn-dark btn-pill" href="#/login">로그인 / 회원가입</a>
-        <a class="btn btn-line btn-pill" href="#/">홈으로</a>
+        <a class="btn btn-dark btn-pill" href="#/login" @click="emit('close')">로그인 / 회원가입</a>
+        <a class="btn btn-line btn-pill" href="#/" @click="emit('close')">홈으로</a>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.gate { max-width: 460px; padding: 34px 34px 30px; }
+.gate { position: relative; max-width: 460px; padding: 34px 34px 30px; }
+.close {
+  position: absolute; top: 14px; right: 16px;
+  width: 32px; height: 32px; border: 0; border-radius: 50%;
+  background: var(--mist); color: var(--g2); font-size: 24px; line-height: 1;
+}
+.close:hover { background: var(--line); color: var(--ink); }
+:global(.gate-scrim) { top: 74px; z-index: 35; }
 .err {
   display: inline-flex; align-items: center; height: 26px; padding: 0 11px;
   border-radius: 999px; background: #FDECEC; color: #A4222A;

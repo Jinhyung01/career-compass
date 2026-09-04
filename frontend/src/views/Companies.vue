@@ -1,7 +1,8 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
-import { companies, totals } from '../data/companies.js'
-import { matchByCompany } from '../data/reports.js'
+import { computed, onMounted, ref, watch } from 'vue'
+import { api } from '../api.js'
+import { hasApiSession } from '../auth.js'
+import { fetchAllCompanies } from '../data/backend.js'
 import CompanyLogo from '../components/CompanyLogo.vue'
 
 // 채용 공고 목록이 아니라, 현직자 인터뷰로 확보한 기업 정보다.
@@ -13,8 +14,12 @@ const sorts = [
   { key: 'diagnosed', label: '진단한 기업 먼저' }
 ]
 const sort = ref('recent')
+const companies = ref([])
+const matches = ref({})
+const loading = ref(true)
+const error = ref('')
 
-const matchOf = name => matchByCompany[name] || null
+const matchOf = name => matches.value[name] || null
 const query = ref('')
 const PAGE = 24
 const shown = ref(PAGE)
@@ -26,15 +31,44 @@ const order = {
 }
 
 const filtered = computed(() =>
-  [...companies].sort(order[sort.value]).filter(c =>
+  [...companies.value].sort(order[sort.value]).filter(c =>
     query.value.trim() === '' ||
     (c.companyName + c.role).toLowerCase().includes(query.value.trim().toLowerCase())
   )
 )
 
 const visible = computed(() => filtered.value.slice(0, shown.value))
+const totals = computed(() => ({
+  companies: companies.value.length,
+  insiders: companies.value.reduce((sum, company) => sum + company.people, 0),
+  insights: companies.value.reduce((sum, company) => sum + company.insight, 0)
+}))
 
 watch([sort, query], () => { shown.value = PAGE })
+
+onMounted(async () => {
+  try {
+    const companyItems = await fetchAllCompanies()
+    companies.value = companyItems
+    // 기업 정보는 공개한다. 로그인한 사용자만 자신의 진단 점수를 함께 불러온다.
+    if (!hasApiSession.value) return
+    const reportPage = await api.reports({ status: 'COMPLETED', page: 0, size: 100 })
+    matches.value = Object.fromEntries(
+      reportPage.items
+        .filter(report => report.reportType === 'FIT_ANALYSIS' && report.companyName)
+        .map(report => [report.companyName, {
+          id: report.reportId,
+          score: Number(report.fitScore),
+          date: report.createdAt,
+          role: '적합도 분석'
+        }])
+    )
+  } catch (requestError) {
+    error.value = requestError.message
+  } finally {
+    loading.value = false
+  }
+})
 </script>
 
 <template>
@@ -70,7 +104,10 @@ watch([sort, query], () => { shown.value = PAGE })
       </div>
     </div>
 
-    <div v-if="filtered.length" class="grid stagger">
+    <p v-if="loading" class="empty">기업 정보를 불러오는 중입니다.</p>
+    <p v-else-if="error" class="empty" role="alert">{{ error }}</p>
+
+    <div v-else-if="filtered.length" class="grid stagger">
       <a v-for="c in visible" :key="c.companyCode" class="co" :href="'#/company/' + c.companyCode">
         <div class="co-top">
           <CompanyLogo :name="c.companyName" :domain="c.domain" :size="46" />
