@@ -40,11 +40,11 @@ const savePdf = () => window.print()
           <p class="sub">{{ r.headline }}</p>
           <div class="banner-cta no-print">
             <button class="btn btn-mint btn-pill" @click="savePdf">PDF로 저장</button>
-            <a class="btn btn-ghost btn-pill" href="#/mypage">기록에 저장</a>
+            <a class="btn btn-ghost btn-pill" href="#/mypage">진단 기록 보기</a>
           </div>
         </div>
         <aside class="glass-neon score">
-          <p class="cap">MATCH SCORE</p>
+          <p class="cap">매치 점수</p>
           <p class="v"><b :key="r.id" class="num" :data-count="overall.fitScore">0</b><em>점 · {{ overall.grade }}등급</em></p>
         </aside>
       </div>
@@ -67,7 +67,7 @@ const savePdf = () => window.print()
           <p class="s-v num">{{ overall.grade }}</p>
         </div>
         <div class="sum-cell">
-          <p class="s-cap">종합 점수</p>
+          <p class="s-cap">매치 점수</p>
           <p class="s-v num">{{ overall.fitScore }}<em>점</em></p>
         </div>
         <div class="sum-cell">
@@ -82,7 +82,7 @@ const savePdf = () => window.print()
 
       <div class="cols mt">
         <div class="left reveal">
-          <h2 class="section-title">역량 프로파일</h2>
+          <h2 class="section-title">역량별 점수</h2>
           <div v-for="s in skills" :key="s.name" class="skill">
             <p class="n">{{ s.name }}</p>
             <div class="bar" :class="{ 'on-mint': s.weak }" :style="{ '--w': s.value + '%' }"><i></i></div>
@@ -98,7 +98,7 @@ const savePdf = () => window.print()
       </div>
 
       <h2 class="section-title mt">세부 역량</h2>
-      <p class="section-note">역량별 점수와 같은 직무 지원자 대비 백분위입니다.</p>
+      <p class="section-note">역량군별 세부 항목의 점수와 판정입니다.</p>
       <div class="table-wrap card">
         <table class="detail">
           <thead>
@@ -231,7 +231,7 @@ const savePdf = () => window.print()
       </div>
 
       <h2 class="section-title mt">예상 면접 질문</h2>
-      <p class="section-note">이번 진단 결과에서 확인 질문이 나올 가능성이 높은 항목입니다.</p>
+      <p class="section-note">이번 진단 결과에서 면접 확인 질문이 나올 가능성이 높은 항목입니다.</p>
       <dl class="qa">
         <div v-for="q in questions" :key="q.q">
           <dt>{{ q.q }}</dt>
@@ -252,7 +252,7 @@ const savePdf = () => window.print()
   padding-top: clamp(40px, 4.5vw, 64px); padding-bottom: clamp(40px, 4.5vw, 64px);
 }
 .banner-inner > div:first-child { flex: 1 1 460px; }
-h1 { font-size: clamp(26px, 3.2vw, 38px); font-weight: 800; margin: 14px 0 0; letter-spacing: -0.04em; color: #F5F5F7; }
+h1 { font-size: clamp(26px, 3.2vw, 40px); font-weight: 800; line-height: 1.15; margin: 14px 0 0; letter-spacing: -0.04em; color: #F5F5F7; }
 .sub { font-size: 15px; color: #A1A1A6; margin: 14px 0 0; }
 .banner-cta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
 
@@ -293,7 +293,7 @@ h1 { font-size: clamp(26px, 3.2vw, 38px); font-weight: 800; margin: 14px 0 0; le
 .skill b { font-size: 14px; font-weight: 800; margin-left: 16px; }
 
 .insight { flex: 1 1 340px; padding: 30px; }
-.insight h3 { font-size: 24px; font-weight: 800; margin: 12px 0 18px; letter-spacing: -0.035em; }
+.insight h3 { font-size: 22px; font-weight: 800; line-height: 1.35; margin: 12px 0 18px; letter-spacing: -0.03em; }
 .insight p { font-size: 14px; line-height: 1.7; color: var(--g1); margin: 0 0 6px; }
 
 /* 표 */
@@ -314,7 +314,7 @@ h1 { font-size: clamp(26px, 3.2vw, 38px); font-weight: 800; margin: 14px 0 0; le
   border-radius: 999px; font-size: 11px; font-weight: 700;
   background: var(--mist); color: var(--g1);
 }
-.judge.good { background: var(--mint-bg); color: #0E5C3B; }
+.judge.good { background: var(--mint-bg); color: var(--mint-ink); }
 .judge.bad { background: #FDECEC; color: #A4222A; }
 
 /* 강점 · 보완점 */
@@ -357,7 +357,7 @@ h1 { font-size: clamp(26px, 3.2vw, 38px); font-weight: 800; margin: 14px 0 0; le
   background: var(--ink); color: var(--mint);
   font-size: 13px; font-weight: 800;
 }
-.proj h3 { font-size: 19px; font-weight: 800; margin: 0; letter-spacing: -0.03em; line-height: 1.35; }
+.proj h3 { font-size: 18px; font-weight: 800; margin: 0; letter-spacing: -0.03em; line-height: 1.35; }
 .p-tag { font-size: 12px; font-weight: 700; color: var(--mint-d); margin: 7px 0 0; }
 .p-src {
   font-size: 12px; line-height: 1.6; color: var(--g2);
@@ -375,7 +375,7 @@ h1 { font-size: clamp(26px, 3.2vw, 38px); font-weight: 800; margin: 14px 0 0; le
 .p-resume {
   margin: 18px 0 0; padding: 14px 16px;
   background: var(--mint-bg); border-radius: var(--r-sm);
-  font-size: 13px; line-height: 1.65; color: #0E3D28;
+  font-size: 13px; line-height: 1.65; color: var(--mint-ink);
 }
 .p-resume span { display: block; font-size: 11px; font-weight: 800; color: var(--mint-d); margin-bottom: 5px; }
 
@@ -398,7 +398,7 @@ h1 { font-size: clamp(26px, 3.2vw, 38px); font-weight: 800; margin: 14px 0 0; le
 .rw-line.before { color: var(--g3); text-decoration: line-through; text-decoration-color: var(--g6); }
 .rw-line.before span { background: var(--mist); color: var(--g2); text-decoration: none; }
 .rw-line.after { color: var(--ink); font-weight: 700; margin-top: 10px; }
-.rw-line.after span { background: var(--mint-bg); color: #0E5C3B; }
+.rw-line.after span { background: var(--mint-bg); color: var(--mint-ink); }
 .rw-why { font-size: 12px; color: var(--g3); margin: 12px 0 0; }
 
 /* 예상 질문 */

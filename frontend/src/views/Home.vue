@@ -3,31 +3,31 @@ import { totals } from '../data/companies.js'
 
 // 카피와 근거는 팀 기획서(문제 정의 · 기존 서비스 한계 · 핵심 흐름)를 따른다.
 const alternatives = [
-  { name: '채용공고', limit: '기업이 직접 쓴 홍보 문구. 실제 업무와 온도차가 크다.', gap: '“Python 활용 능력”이 어느 수준인지 알 수 없음' },
+  { name: '채용 공고', limit: '기업이 직접 쓴 홍보 문구. 실제 업무와 온도차가 크다.', gap: '“Python 활용 능력”이 어느 수준인지 알 수 없음' },
   { name: '잡플래닛 · 블라인드', limit: '만족도 후기 중심이라 내 역량과 대조가 안 된다.', gap: '평점은 있지만 내 기준점이 없음' },
   { name: '취업 커뮤니티', limit: '정보가 비구조적이고 검색이 되지 않는다.', gap: '같은 질문이 매년 반복됨' },
-  { name: 'AI ChatBot', limit: '공개된 정보만 안다.', gap: '인터뷰로만 얻는 내부 기준은 모름' }
+  { name: 'AI 챗봇', limit: '공개된 정보만 안다.', gap: '인터뷰로만 얻는 내부 기준은 모름' }
 ]
 
 // 프로필 입력 → 기준 대조 → 리포트 확인
 const steps = [
   { no: '01', title: '프로필 입력', body: '학력·경력·자격증·프로젝트를 입력합니다.' },
-  { no: '02', title: '기준 대조', body: '채용 공고와 현직자 인터뷰에 내 프로필을 항목 단위로 맞춰봅니다.' },
+  { no: '02', title: '기준 대조', body: '채용 공고와 현직자 인터뷰에 내 프로필을 항목 단위로 대조합니다.' },
   { no: '03', title: '리포트 확인', body: '부족한 역량과 보완 과제를 우선순위 순서로 받습니다.', cta: true }
 ]
 
 // Figma Frame 40 — 이 서비스가 답하는 세 가지 질문
 const questions = [
-  { no: '01', q: '내 이력서에서 무엇이 부족한가', a: '공고 기준과 비교해 빈 경험을 찾습니다.' },
-  { no: '02', q: '무엇을 실행해야 하는가', a: '사용자를 위한 방향성을 제안합니다.' },
-  { no: '03', q: '어떻게 합격권에 가까워지는가', a: '재진단으로 변화를 확인합니다.' }
+  { no: '01', q: '내 프로필에서 무엇이 부족한가', a: '공고 기준과 대조해 부족한 경험을 찾습니다.' },
+  { no: '02', q: '무엇을 실행해야 하는가', a: '다음에 할 프로젝트를 제안합니다.' },
+  { no: '03', q: '어떻게 합격권에 가까워지는가', a: '다시 진단해 변화를 확인합니다.' }
 ]
 
 // clipboard 10 — 등록 기업 / 인사이트 / 인터뷰 응답자 + START NOW
 const stats = [
-  { cap: '등록 기업', value: totals.companies, note: '곳의 기업 정보' },
-  { cap: '인사이트', value: totals.insights, note: '건의 현직자 인사이트' },
-  { cap: '인터뷰에 응해주신 분들', value: totals.insiders, suffix: '명', note: '등록 기업 현직자 기준' }
+  { cap: '등록 기업', value: totals.companies, suffix: '곳', note: '현직자 인터뷰를 확보한 기업' },
+  { cap: '인사이트', value: totals.insights, suffix: '건', note: '인터뷰에서 정리한 요구 항목' },
+  { cap: '인터뷰 참여 현직자', value: totals.insiders, suffix: '명', note: '등록 기업 현직자 기준' }
 ]
 
 const jump = id => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -57,7 +57,7 @@ const jump = id => document.getElementById(id)?.scrollIntoView({ behavior: 'smoo
           <a class="btn btn-mint btn-lg btn-pill" href="#/profile">진단 시작하기</a>
           <button class="btn btn-ghost btn-lg btn-pill" @click="jump('why')">서비스 안내</button>
         </div>
-        <p class="tiny">진단 결과는 계정에 저장되며, 재진단 시 이전 결과와 비교됩니다.</p>
+        <p class="tiny">진단 결과는 계정에 저장되고, 다시 진단하면 이전 결과와 비교됩니다.</p>
       </div>
 
       <!-- 히어로 위에 떠 있는 유리 카드 -->
@@ -93,7 +93,7 @@ const jump = id => document.getElementById(id)?.scrollIntoView({ behavior: 'smoo
     </div>
 
     <p class="verdict reveal">
-      위 채널은 정보를 보여줄 뿐, 내 이력과 맞춰보지는 않습니다.
+      위 채널은 정보를 보여줄 뿐, 내 프로필과 대조하지는 않습니다.
       Jobpill은 입력한 프로필을 채용 공고·현직자 인터뷰와 항목 단위로 대조해 결과를 제시합니다.
     </p>
   </section>
@@ -109,7 +109,7 @@ const jump = id => document.getElementById(id)?.scrollIntoView({ behavior: 'smoo
         <span class="step-no num">{{ s.no }}</span>
         <h3>{{ s.title }}</h3>
         <p>{{ s.body }}</p>
-        <a v-if="s.cta" class="badge cta-badge" href="#/profile">시작하기</a>
+        <a v-if="s.cta" class="badge cta-badge" href="#/profile">진단 시작하기</a>
       </li>
     </ol>
   </section>
@@ -132,8 +132,8 @@ const jump = id => document.getElementById(id)?.scrollIntoView({ behavior: 'smoo
         <p class="u">{{ s.note }}</p>
       </div>
       <a class="tile go" href="#/profile">
-        <p class="cap">지금 시작하기</p>
-        <p class="v2">진단 시작</p>
+        <p class="cap">새 진단</p>
+        <p class="v2">진단 시작하기</p>
         <p class="u2">프로필 입력부터 시작합니다.</p>
       </a>
     </div>
@@ -142,8 +142,8 @@ const jump = id => document.getElementById(id)?.scrollIntoView({ behavior: 'smoo
       <p class="eyebrow on-dark">서비스 운영 원칙</p>
       <h3>데이터의 출처와 시점을 함께 제공합니다.</h3>
       <p class="pd">
-        AI가 생성한 진단 결과는 담당자가 검수한 뒤 제공하며, 모든 인터뷰 데이터에는 조사 시점을 함께 표시합니다.
-        업로드한 이력서 파일은 30일이 지나면 자동으로 삭제됩니다.
+        AI가 생성한 진단 결과는 담당자가 검수한 뒤 제공하며, 모든 인터뷰 데이터에는 인터뷰 시점을 함께 표시합니다.
+        업로드 파일은 용도 외에 이용되지 않습니다.
       </p>
       <a class="btn btn-mint btn-lg btn-pill" href="#/profile">진단 시작하기</a>
     </div>
@@ -251,7 +251,7 @@ h1 {
   margin-top: 48px;
 }
 .alt article { padding: 26px 26px 28px; }
-.alt h3 { font-size: 17px; font-weight: 800; margin: 0; letter-spacing: -0.02em; }
+.alt h3 { font-size: 18px; font-weight: 800; margin: 0; letter-spacing: -0.03em; }
 .limit { font-size: 14px; line-height: 1.65; color: var(--g2); margin: 14px 0 0; }
 .gap {
   font-size: 13px; color: var(--g1); margin: 18px 0 0;
@@ -287,7 +287,7 @@ h1 {
   font-size: 14px; font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
-.steps h3 { font-size: 19px; font-weight: 800; margin: 20px 0 0; letter-spacing: -0.025em; }
+.steps h3 { font-size: 18px; font-weight: 800; margin: 20px 0 0; letter-spacing: -0.03em; }
 .steps p { font-size: 14px; line-height: 1.7; color: var(--g2); margin: 14px 0 0; }
 .steps .badge { margin-top: 22px; }
 .cta-badge { background: var(--mint); color: #0A0A0A; }

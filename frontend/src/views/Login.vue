@@ -10,7 +10,8 @@ const email = ref('')
 // 프로토타입: 서버 인증 없이 로컬 세션만 만든다. 실 API 연동 시 api.login/register 로 교체.
 const submit = () => {
   login({ name: name.value.trim() || email.value.split('@')[0] || '김서현', email: email.value.trim() || 'name@email.com' })
-  location.hash = mode.value === 'login' ? '#/mypage' : '#/profile'
+  // 로그인은 메인으로, 가입은 바로 프로필 입력으로 보낸다
+  location.hash = mode.value === 'login' ? '#/' : '#/profile'
 }
 </script>
 
@@ -25,7 +26,7 @@ const submit = () => {
         <button :class="{ on: mode === 'signup' }" @click="mode = 'signup'">회원가입</button>
       </div>
 
-      <h1>{{ mode === 'login' ? '로그인하고 진단 시작' : '가입하고 진단 시작' }}</h1>
+      <h1>{{ mode === 'login' ? '로그인하고 진단 시작하기' : '가입하고 진단 시작하기' }}</h1>
       <p class="lead">
         {{ mode === 'login'
           ? '진단 기록과 리포트는 계정에 저장됩니다.'
@@ -57,7 +58,7 @@ const submit = () => {
       </div>
 
       <button class="btn btn-dark btn-lg btn-block btn-pill" @click="submit">
-        {{ mode === 'login' ? '로그인' : '가입하고 프로필 입력' }}
+        {{ mode === 'login' ? '로그인' : '가입하고 진단 시작하기' }}
       </button>
 
       <div class="or"><span>또는</span></div>
@@ -67,7 +68,7 @@ const submit = () => {
       <button class="btn btn-block sns naver" @click="submit">네이버로 계속하기</button>
 
       <p class="foot-note">
-        분석에 사용한 이력서 파일은 30일 뒤 자동 삭제됩니다.
+        업로드 파일은 용도 외에 이용되지 않습니다.
       </p>
     </div>
   </div>

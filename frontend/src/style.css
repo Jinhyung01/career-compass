@@ -15,16 +15,11 @@
   --line: #E5E8E5;
   --line-2: #D2D6D2;
 
-  /* 브랜드 */
+  /* 브랜드 — 네온은 어두운 면, mint-d 는 밝은 면 텍스트, mint-ink 는 mint-bg 위 텍스트 */
   --mint: #38FF9C;
   --mint-d: #178E5C;
   --mint-bg: #EBFFF5;
-
-  /* 차트 계열 (dataviz 검증 통과: light #178E5C/#9B5DE0, dark #1FA76A/#8A5FD6) */
-  --series-1: #178E5C;
-  --series-2: #9B5DE0;
-  --series-1-dark: #1FA76A;
-  --series-2-dark: #8A5FD6;
+  --mint-ink: #0E5C3B;
 
   /* 회색 계단 */
   --g1: #4E524F;
@@ -247,7 +242,7 @@ input, select { font: inherit; }
 .page-desc { font-size: 16px; line-height: 1.65; color: var(--g2); margin: 14px 0 0; max-width: 62ch; }
 .head { padding-top: clamp(36px, 4.5vw, 64px); display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
 .head .actions { margin-left: auto; display: flex; gap: 10px; align-items: center; padding-top: 10px; }
-.section-title { font-size: 22px; font-weight: 800; margin: 0 0 8px; letter-spacing: -0.03em; }
+.section-title { font-size: 22px; font-weight: 800; line-height: 1.35; margin: 0 0 8px; letter-spacing: -0.03em; }
 .section-note { font-size: 14px; color: var(--g3); margin: 0 0 24px; }
 
 .card {
@@ -301,7 +296,7 @@ select.field {
   font-size: 11px; font-weight: 700;
   background: var(--mist); color: var(--g1);
 }
-.badge.live { background: var(--mint-bg); color: #0E5C3B; }
+.badge.live { background: var(--mint-bg); color: var(--mint-ink); }
 .badge.dark { background: var(--ink); color: #fff; }
 
 /* 게이지 — 등장할 때 0에서 자란다 */

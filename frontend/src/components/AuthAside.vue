@@ -5,15 +5,15 @@
     </div>
     <div class="inner">
       <h2>
-        <span class="m">합격까지 남은 경험을</span><br />
-        <span class="w">근거와 함께 확인하세요</span>
+        <span class="m">현직자 기준으로</span><br />
+        <span class="w">부족한 경험을 확인하세요</span>
       </h2>
-      <p class="desc">진단 결과는 계정에 저장되고, 다시 진단할 때 이전 결과와 비교됩니다.</p>
+      <p class="desc">진단 결과는 계정에 저장되고, 다시 진단하면 이전 결과와 비교됩니다.</p>
 
       <ul class="points">
         <li><b>✓ 리포트 자동 저장</b></li>
-        <li><b>✓ 현직자 데이터 교차 검증</b></li>
-        <li><b>✓ 업로드 파일 보관</b></li>
+        <li><b>✓ 현직자 인터뷰 교차 검증</b></li>
+        <li><b>✓ 업로드 파일 용도 외 미이용</b></li>
       </ul>
     </div>
   </aside>

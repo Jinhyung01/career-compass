@@ -8,8 +8,8 @@ const props = defineProps({ company: { type: String, default: '' }, role: { type
 const emit = defineEmits(['done'])
 
 const steps = [
-  { label: '프로필 파싱', note: '입력한 학력·경력·자격증·프로젝트를 항목으로 분해합니다', ms: 1400 },
-  { label: '인터뷰 코퍼스 검색', note: '해당 기업 현직자 인터뷰를 불러옵니다', ms: 2200 },
+  { label: '프로필 정리', note: '입력한 학력·경력·자격증·프로젝트를 항목으로 나눕니다', ms: 1400 },
+  { label: '현직자 인터뷰 검색', note: '해당 기업 현직자 인터뷰를 불러옵니다', ms: 2200 },
   { label: '항목별 대조', note: '요구 수준과 내 수준을 역량 단위로 맞춰봅니다', ms: 2600 },
   { label: '리포트 작성', note: '강점·부족한 역량·보완할 점을 순서대로 정리합니다', ms: 2000 }
 ]
@@ -82,7 +82,7 @@ onUnmounted(() => {
   padding: 40px 40px 34px;
 }
 .cap { font-size: 12px; font-weight: 700; color: var(--mint); margin: 0; }
-h2 { font-size: clamp(22px, 2.6vw, 28px); font-weight: 800; margin: 14px 0 0; letter-spacing: -0.04em; color: #fff; }
+h2 { font-size: 22px; font-weight: 800; line-height: 1.35; margin: 14px 0 0; letter-spacing: -0.03em; color: #fff; }
 .sub { font-size: 14px; line-height: 1.7; color: #C9CCC9; margin: 12px 0 30px; }
 
 .steps { list-style: none; margin: 0; padding: 0; }

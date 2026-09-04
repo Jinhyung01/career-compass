@@ -1,14 +1,15 @@
 <script setup>
 import { onMounted, onUnmounted, ref } from 'vue'
 import { user } from '../auth.js'
+import { reports } from '../data/reports.js'
 
 // 좌측 스티키 인덱스 + 아래로 길게 이어지는 섹션 구성.
-// 진단 기록(Frame 45) · 플랜 관리(Frame 47)에 기본 정보 수정 섹션을 앞에 붙였다.
+// 진단 기록(Frame 45) · 결제 내역(Frame 47)에 기본 정보 수정 섹션을 앞에 붙였다.
 const sections = [
   { id: 'account', label: '기본 정보' },
   { id: 'archive', label: '진단 기록' },
   { id: 'trend', label: '점수 추이' },
-  { id: 'billing', label: '플랜 관리' }
+  { id: 'billing', label: '결제 내역' }
 ]
 
 const profile = ref({
@@ -32,10 +33,17 @@ const save = () => {
   setTimeout(() => { saved.value = false }, 2400)
 }
 
+// 진단 기록 요약 — 리포트 데이터에서 직접 센다
+const FIT_LINE = 85
 const stats = [
-  { name: '최근 변화', value: '+12', unit: '점' },
-  { name: '완료한 계획', value: '5' },
-  { name: '현직자 리뷰', value: '2' }
+  { name: '진단 기업', value: new Set(reports.map(r => r.meta.companyName)).size, unit: '개' },
+  { name: '제안된 프로젝트', value: reports.reduce((n, r) => n + r.recommendedProjects.length, 0), unit: '개' },
+  {
+    name: '적합 기업',
+    value: new Set(reports.filter(r => r.overall.fitScore >= FIT_LINE).map(r => r.meta.companyName)).size,
+    unit: '개',
+    note: `${FIT_LINE}점 이상을 기준으로 합니다`
+  }
 ]
 
 // id 는 src/data/reports.js 와 이어진다 — 행을 누르면 그 회차 리포트가 열린다
@@ -57,11 +65,9 @@ const trend = [
   { date: '09.03', value: 87, last: true }
 ]
 
-const plans = [
-  { name: 'FREE', price: '₩0', features: '월 1회 진단 · 기본 리포트', cta: '현재 아님' },
-  { name: 'PLUS', price: '₩29,000', features: '무제한 진단 · 리뷰 2회', cta: '사용 중', current: true, recommend: true },
-  { name: 'PRO', price: '₩59,000', features: '리뷰 월 6회 · 1:1 세션', cta: '업그레이드' }
-]
+// 건바이건 결제 — 진단 1건마다 결제하므로 결제 내역은 진단 기록과 1:1이다
+const PRICE = '₩5,900'
+const payments = rows.map(r => ({ id: r.id, date: r.date, title: r.title, amount: PRICE }))
 
 // 스크롤 위치에 따라 인덱스 활성 항목을 바꾼다
 const active = ref('account')
@@ -105,7 +111,7 @@ onUnmounted(() => io?.disconnect())
           <div class="head reveal">
             <div>
               <h1 class="page-title">기본 정보</h1>
-              <p class="page-desc">진단에 사용하는 기준 정보입니다. 수정하면 다음 진단부터 반영됩니다.</p>
+              <p class="page-desc">진단에 사용하는 기본 정보입니다. 수정하면 다음 진단부터 반영됩니다.</p>
             </div>
             <div class="actions">
               <span v-if="saved" class="badge live">저장되었습니다</span>
@@ -158,6 +164,7 @@ onUnmounted(() => io?.disconnect())
             <div v-for="s in stats" :key="s.name">
               <p class="cap">{{ s.name }}</p>
               <p class="v num">{{ s.value }}<em v-if="s.unit">{{ s.unit }}</em></p>
+              <p v-if="s.note" class="s-note">{{ s.note }}</p>
             </div>
           </div>
 
@@ -192,35 +199,22 @@ onUnmounted(() => io?.disconnect())
           </div>
         </section>
 
-        <!-- ══ 플랜 관리 ══ -->
+        <!-- ══ 결제 내역 ══ 등장·호버 모션 없는 정적 원장 -->
         <section id="billing" class="sec">
-          <div class="reveal">
-            <h2 class="page-title">플랜 관리</h2>
-            <p class="page-desc">현재 사용량에 맞는 플랜을 선택하세요.</p>
+          <div>
+            <h2 class="page-title">결제 내역</h2>
+            <p class="page-desc">진단은 건별로 결제됩니다. 1회 진단권 {{ PRICE }}.</p>
           </div>
 
-          <div class="current card-dark reveal">
-            <div>
-              <p class="c-cap">CURRENT PLAN</p>
-              <p class="c-name">CAREER PLUS</p>
-              <p class="c-desc">무제한 진단 · 현직자 리뷰 월 2회 · 공고 알림</p>
+          <div class="ledger card">
+            <div v-for="p in payments" :key="p.id" class="lrow">
+              <span class="l-date num">{{ p.date }}</span>
+              <span class="l-title">{{ p.title }}</span>
+              <span class="l-amt num">{{ p.amount }}</span>
             </div>
-            <p class="price num">₩29,000<em>/ 월</em></p>
-            <button class="btn btn-mint btn-sm btn-pill">플랜 변경</button>
           </div>
 
-          <h3 class="section-title cmp">플랜 비교</h3>
-          <div class="plans stagger">
-            <article v-for="p in plans" :key="p.name" class="card plan" :class="{ pick: p.recommend }">
-              <span v-if="p.recommend" class="badge rec">추천</span>
-              <p class="p-name">{{ p.name }}</p>
-              <p class="amount num">{{ p.price }}</p>
-              <p class="feat">{{ p.features }}</p>
-              <span class="badge" :class="{ dark: p.current }">{{ p.cta }}</span>
-            </article>
-          </div>
-
-          <div class="pay card reveal">
+          <div class="pay card">
             <span class="label">결제 수단</span>
             <strong class="num">신한카드 ···· 1024</strong>
             <button class="link">변경</button>
@@ -286,6 +280,7 @@ select.field.s { background-position: calc(100% - 22px) 20px, calc(100% - 16px) 
 .cap { font-size: 12px; font-weight: 700; color: #A1A1A6; margin: 0; }
 .v { font-size: 32px; font-weight: 800; margin: 10px 0 0; letter-spacing: -0.045em; color: #F5F5F7; }
 .v em { font-style: normal; font-size: 14px; color: #A1A1A6; margin-left: 6px; }
+.s-note { font-size: 12px; line-height: 1.5; color: #8A8D8A; margin: 10px 0 0; }
 
 .table { margin-top: 34px; }
 .thead, .tr { display: grid; grid-template-columns: 130px 1fr 90px 80px 80px; align-items: center; gap: 14px; }
@@ -318,21 +313,20 @@ select.field.s { background-position: calc(100% - 22px) 20px, calc(100% - 16px) 
 .bar-v.last { background: var(--mint); }
 .col .date { font-size: 12px; color: var(--g4); margin-top: 10px; }
 
-.current { display: flex; flex-wrap: wrap; align-items: center; gap: 24px 30px; padding: 30px; margin-top: 26px; border-radius: var(--r-lg); }
-.c-cap { font-size: 11px; font-weight: 800; color: var(--mint); margin: 0; }
-.c-name { font-size: clamp(22px, 2.4vw, 28px); font-weight: 800; margin: 8px 0 0; letter-spacing: -0.035em; }
-.c-desc { font-size: 13px; color: #C9CCC9; margin: 14px 0 0; }
-.price { margin-left: auto; font-size: 26px; font-weight: 800; letter-spacing: -0.04em; }
-.price em { font-style: normal; font-size: 12px; color: #A1A1A6; margin-left: 8px; }
-
-.cmp { margin: 48px 0 20px; }
-.plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; }
-.plan { padding: 26px 24px 28px; }
-.plan.pick { border-color: var(--ink); box-shadow: 0 14px 40px rgba(11, 13, 12, 0.1); }
-.rec { background: var(--mint); color: var(--ink); margin-bottom: 14px; }
-.p-name { font-size: 12px; font-weight: 800; color: var(--g1); margin: 0; letter-spacing: 0.04em; }
-.amount { font-size: 30px; font-weight: 800; margin: 8px 0 20px; letter-spacing: -0.045em; }
-.feat { font-size: 13px; color: var(--g2); margin: 0 0 24px; }
+/* 결제 내역 — 장식 없는 원장 한 상자. 등장·호버 모션 없음 */
+.ledger { margin-top: 26px; padding: 2px 26px; }
+.lrow {
+  display: grid;
+  grid-template-columns: 104px 1fr auto;
+  align-items: baseline;
+  gap: 18px;
+  padding: 17px 0;
+  border-top: 1px solid var(--line);
+}
+.lrow:first-child { border-top: 0; }
+.l-date { font-size: 13px; color: var(--g3); }
+.l-title { font-size: 14px; color: var(--ink); }
+.l-amt { font-size: 14px; font-weight: 700; }
 
 .pay { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 30px; padding: 24px 28px; margin-top: 40px; }
 .pay .label { margin: 0; }
@@ -359,7 +353,9 @@ select.field.s { background-position: calc(100% - 22px) 20px, calc(100% - 16px) 
   .tr { grid-template-columns: 1fr auto; height: auto; gap: 8px 14px; padding: 20px; }
   .tr strong { grid-column: 1 / -1; order: -1; }
   .tr:hover { transform: none; }
+  .ledger { padding: 2px 20px; }
+  .lrow { grid-template-columns: 1fr auto; gap: 6px 14px; }
+  .lrow .l-title { grid-column: 1 / -1; order: -1; }
   .search { width: 100%; }
-  .price { margin-left: 0; }
 }
 </style>

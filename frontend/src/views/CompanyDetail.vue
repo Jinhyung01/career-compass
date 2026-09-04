@@ -29,7 +29,7 @@ const diag = computed(() => matchByCompany[co.value.companyName] || null)
             {{ co.role }} · 현직자 {{ co.people }}명 · 인사이트 {{ co.insight }}건 · 최근 인터뷰 {{ co.interviewed }}
           </p>
           <div class="cta">
-            <a class="btn btn-mint btn-pill" href="#/profile">이 기업 적합도 분석하기</a>
+            <a class="btn btn-mint btn-pill" href="#/profile">이 기업으로 진단하기</a>
             <button class="btn btn-ghost btn-pill">관심 기업에 담기</button>
           </div>
         </div>
@@ -100,7 +100,7 @@ const diag = computed(() => matchByCompany[co.value.companyName] || null)
               {{ co.companyName }}의 현직자 {{ co.people }}명이 말한 요구 항목과 내 프로필을 대조해야
               이 기업 기준 점수를 계산할 수 있습니다.
             </p>
-            <a class="btn btn-mint btn-block btn-pill" href="#/profile">적합도 분석 시작</a>
+            <a class="btn btn-mint btn-block btn-pill" href="#/profile">진단 시작하기</a>
           </template>
         </div>
 
@@ -130,7 +130,7 @@ const diag = computed(() => matchByCompany[co.value.companyName] || null)
   display: flex; align-items: center; justify-content: center;
   font-size: 34px; font-weight: 800;
 }
-h1 { font-size: clamp(28px, 3.4vw, 42px); font-weight: 800; margin: 10px 0 0; letter-spacing: -0.045em; color: #F5F5F7; }
+h1 { font-size: clamp(26px, 3.2vw, 40px); font-weight: 800; line-height: 1.15; margin: 10px 0 0; letter-spacing: -0.04em; color: #F5F5F7; }
 .sub { font-size: 14px; color: #A1A1A6; margin: 12px 0 0; }
 .cta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
 
