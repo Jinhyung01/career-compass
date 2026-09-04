@@ -2,12 +2,16 @@
 import { computed, ref } from 'vue'
 import ConsultAside from '../components/ConsultAside.vue'
 import AnalyzingModal from '../components/AnalyzingModal.vue'
+import PaymentModal from '../components/PaymentModal.vue'
 import { companies as allCompanies } from '../data/companies.js'
 
 // UC-S02 내 정보 입력 / 수정 — 대조의 기준이 되는 쪽은 공고가 아니라 나다.
 // STEP 01 / 02  기업 · 직무 · 기술 스택
 // STEP 02 / 02  학력 · 경력 · 자격증 · 프로젝트  (Figma clipboard 31 · 32)
 const step = ref(1)
+const paying = ref(false)
+// 건바이건 결제 목업 — 결제 완료 전엔 "결제하기", 완료 후엔 "진단하기"로 버튼이 바뀐다
+const paidDone = ref(false)
 const analyzing = ref(false)
 
 // 지원 기업·직무 선택지는 기업관과 같은 더미 데이터에서 뽑는다
@@ -48,25 +52,27 @@ const addCareer = () => form.value.careers.push({ company: '', period: '', type:
 
 const agent = computed(() => step.value === 1
   ? {
-      title: ['직무만 정해도', '진단을 시작할 수 있어요.'],
-      desc: ['기업까지 적으면 공고 데이터를', '더 정확하게 좁혀볼게요.'],
+      title: ['직무만 정해도', '진단을 시작할 수 있습니다.'],
+      desc: ['기업까지 적으면 공고 데이터를', '더 정확하게 좁힙니다.'],
       checks: [
         { label: '희망 직무 입력 완료', ok: !!form.value.role },
         { label: `기술 스택 ${form.value.stacks.length}개 선택`, ok: form.value.stacks.length > 0 }
       ]
     }
   : {
-      title: ['프로필만 입력해도', '진단 할 수 있어요.'],
-      desc: ['기업까지 적으면 공고 데이터 기반으로', '더 정확한 컨설팅이 가능해요.'],
+      title: ['프로필만 입력해도', '진단할 수 있습니다.'],
+      desc: ['기업까지 적으면 공고 데이터를 기준으로', '더 정확하게 진단합니다.'],
       checks: [
-        { label: '기업 문화 입력 완료', ok: !!form.value.company },
+        { label: '지원 기업 선택 완료', ok: !!form.value.company },
         { label: `자격증 ${form.value.certs.length}개 등록`, ok: form.value.certs.length > 0 },
-        { label: '이력 업로드 중', ok: form.value.files.length > 0 }
+        { label: `파일 ${form.value.files.length}개 업로드`, ok: form.value.files.length > 0 }
       ]
     })
 
 const goStep = n => { step.value = n; window.scrollTo({ top: 0, behavior: 'smooth' }) }
-const start = () => { analyzing.value = true }
+// 결제 전엔 결제창을 띄우고, 결제 완료 후엔 같은 버튼이 분석을 시작한다
+const cta = () => { paidDone.value ? (analyzing.value = true) : (paying.value = true) }
+const onPaid = () => { paying.value = false; paidDone.value = true }
 // 진단이 끝나면 방금 만든 리포트로 바로 이동한다 (목록이 아니라 상세)
 const done = () => { analyzing.value = false; location.hash = '#/report/r1' }
 </script>
@@ -78,7 +84,7 @@ const done = () => { analyzing.value = false; location.hash = '#/report/r1' }
 
       <!-- ═══ 입력 ═══ -->
       <section class="main reveal">
-        <p class="eyebrow">STEP {{ step === 1 ? '01' : '02' }} / 02 · 내 정보</p>
+        <p class="eyebrow">STEP {{ step === 1 ? '01' : '02' }} / 02 · 프로필</p>
 
         <!-- STEP 01 / 02 -->
         <template v-if="step === 1">
@@ -113,8 +119,8 @@ const done = () => { analyzing.value = false; location.hash = '#/report/r1' }
 
         <!-- STEP 02 / 02 -->
         <template v-else>
-          <h1>프로필을 입력 받고 있어요.</h1>
-          <p class="desc">사용자의 정보를 기준으로 진단 결과를 작성합니다.</p>
+          <h1>어떤 경험을 쌓으셨나요?</h1>
+          <p class="desc">입력한 프로필을 기준으로 진단 결과를 작성합니다.</p>
 
           <label class="label" for="degree">학력</label>
           <select id="degree" v-model="form.degree" class="field">
@@ -139,7 +145,7 @@ const done = () => { analyzing.value = false; location.hash = '#/report/r1' }
             id="cert"
             v-model="certInput"
             class="field"
-            placeholder="자격증 명 입력 후 Enter를 눌러주세요 (예: 정보처리기사, OPic(IH))"
+            placeholder="자격증 이름을 입력하고 Enter를 누르세요 (예: 정보처리기사, OPic(IH))"
             @keyup.enter="addCert"
           />
           <div class="tags">
@@ -148,10 +154,10 @@ const done = () => { analyzing.value = false; location.hash = '#/report/r1' }
             </span>
           </div>
 
-          <label class="label" for="project">프로젝트(경험) 내용</label>
-          <textarea id="project" v-model="form.project" class="field area" placeholder="프로젝트 관련 내용을 입력해주세요."></textarea>
+          <label class="label" for="project">프로젝트 경험</label>
+          <textarea id="project" v-model="form.project" class="field area" placeholder="맡은 역할과 결과를 입력하세요."></textarea>
 
-          <label class="label" for="resume">프로젝트(경험) 관련 자료 <span class="opt">30일 뒤 자동 삭제</span></label>
+          <label class="label" for="resume">프로젝트 자료 <span class="opt">용도 외 미이용</span></label>
           <label class="drop">
             <input id="resume" type="file" accept=".pdf,.docx" hidden />
             <strong>PDF 또는 DOCX를 여기에 놓으세요</strong>
@@ -165,7 +171,7 @@ const done = () => { analyzing.value = false; location.hash = '#/report/r1' }
 
           <div class="foot-btns">
             <button class="btn btn-dark btn-lg btn-pill grow" @click="goStep(1)">이전</button>
-            <button class="btn btn-mint btn-lg btn-pill grow" @click="start">진단 시작하기 (결제)</button>
+            <button class="btn btn-mint btn-lg btn-pill grow" @click="cta">{{ paidDone ? '진단하기' : '결제하기' }}</button>
           </div>
         </template>
       </section>
@@ -173,7 +179,7 @@ const done = () => { analyzing.value = false; location.hash = '#/report/r1' }
       <!-- ═══ 에이전트 ═══ -->
       <aside class="agent">
         <div class="glass-concrete agent-card">
-          <p class="tag-row"><i></i>CAREER AGENT</p>
+          <p class="tag-row"><i></i>진단 안내</p>
 
           <h2>
             <span v-for="t in agent.title" :key="t">{{ t }}<br /></span>
@@ -190,12 +196,13 @@ const done = () => { analyzing.value = false; location.hash = '#/report/r1' }
 
           <p class="note">
             {{ picked.companyName }}에는 인터뷰에 응해주신 현직자가 {{ picked.people }}명 있습니다.
-            마지막 인터뷰는 {{ picked.interviewed }}이고, 인사이트는 {{ picked.insight }}건입니다.
+            최근 인터뷰는 {{ picked.interviewed }}이고, 인사이트는 {{ picked.insight }}건입니다.
           </p>
         </div>
       </aside>
     </div>
 
+    <PaymentModal v-if="paying" :company="form.company" :role="form.role" @paid="onPaid" @close="paying = false" />
     <AnalyzingModal v-if="analyzing" :company="form.company" :role="form.role" @done="done" />
   </div>
 </template>
@@ -207,7 +214,7 @@ const done = () => { analyzing.value = false; location.hash = '#/report/r1' }
 
 /* 입력 */
 .main { flex: 1 1 auto; padding: 44px 52px 40px; max-width: 720px; }
-h1 { font-size: clamp(26px, 3vw, 34px); font-weight: 800; margin: 12px 0 0; letter-spacing: -0.04em; }
+h1 { font-size: clamp(26px, 3.2vw, 40px); font-weight: 800; line-height: 1.15; margin: 12px 0 0; letter-spacing: -0.04em; }
 .desc { font-size: 15px; line-height: 1.7; color: var(--g2); margin: 12px 0 40px; max-width: 52ch; }
 .main .label, .main p.label { margin-top: 28px; }
 .opt { font-weight: 400; font-size: 12px; color: var(--g4); }
@@ -273,7 +280,7 @@ h1 { font-size: clamp(26px, 3vw, 34px); font-weight: 800; margin: 12px 0 0; lett
 .agent-card { padding: 28px 26px 30px; }
 .tag-row { display: flex; align-items: center; gap: 12px; font-size: 13px; font-weight: 700; margin: 0; }
 .tag-row i { width: 26px; height: 26px; border-radius: 8px; background: var(--mint); }
-.agent-card h2 { font-size: 21px; line-height: 1.45; font-weight: 800; margin: 26px 0 0; letter-spacing: -0.03em; }
+.agent-card h2 { font-size: 22px; line-height: 1.35; font-weight: 800; margin: 26px 0 0; letter-spacing: -0.03em; }
 .d { font-size: 13px; line-height: 1.8; color: var(--g2); margin: 18px 0 0; }
 hr { border: 0; border-top: 1px solid rgba(11, 13, 12, 0.1); margin: 24px 0 20px; }
 .checks { list-style: none; margin: 0; padding: 0; }

@@ -6,7 +6,7 @@ import Logo from './Logo.vue'
   <footer>
     <div class="pad inner">
       <div class="brand">
-        <Logo :mark="24" dark />
+        <Logo :size="24" dark />
         <p>현직자에게 직접 물어 정리한 기준으로,<br />내 프로필을 대조합니다.</p>
       </div>
 
@@ -14,8 +14,8 @@ import Logo from './Logo.vue'
         <div>
           <p class="cap">서비스</p>
           <a href="#/profile">컨설팅</a>
-          <a href="#/report">리포트</a>
           <a href="#/companies">기업 정보</a>
+          <a href="#/report">리포트</a>
         </div>
         <div>
           <p class="cap">계정</p>
@@ -32,7 +32,7 @@ import Logo from './Logo.vue'
     </div>
 
     <div class="pad legal">
-      <p>인터뷰 자료는 관리자가 검수해 등록하며 조사 시점을 함께 표시합니다. 업로드한 파일은 30일 뒤 자동 삭제됩니다.</p>
+      <p>인터뷰 자료는 관리자가 검수해 등록하며 인터뷰 시점을 함께 표시합니다. 업로드 파일은 용도 외에 이용되지 않습니다.</p>
       <p>© 2026 Jobpill</p>
     </div>
   </footer>

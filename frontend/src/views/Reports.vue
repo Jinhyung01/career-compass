@@ -25,7 +25,7 @@ const weakest = r => r.skills.reduce((a, b) => (b.value < a.value ? b : a))
 <template>
   <div class="pad wrap">
     <header class="reveal">
-      <p class="eyebrow">REPORT ARCHIVE</p>
+      <p class="eyebrow">진단 기록</p>
       <h1 class="page-title">리포트</h1>
       <p class="page-desc">진단할 때마다 리포트가 한 건씩 쌓입니다. 점수보다 어떤 항목이 바뀌었는지를 보세요.</p>
     </header>
@@ -47,7 +47,7 @@ const weakest = r => r.skills.reduce((a, b) => (b.value < a.value ? b : a))
       </div>
       <a class="go" href="#/profile">
         <p class="cap">새 진단</p>
-        <p class="v2">컨설팅 시작</p>
+        <p class="v2">진단 시작하기</p>
         <p class="note2">프로필 입력부터 시작합니다.</p>
       </a>
     </div>
@@ -115,7 +115,7 @@ const weakest = r => r.skills.reduce((a, b) => (b.value < a.value ? b : a))
 
 .body { flex: 1; min-width: 0; }
 .who { font-size: 12px; color: var(--g3); margin: 0; }
-.row h2 { font-size: 19px; font-weight: 800; letter-spacing: -0.03em; margin: 6px 0 0; }
+.row h2 { font-size: 18px; font-weight: 800; letter-spacing: -0.03em; margin: 6px 0 0; }
 .head { font-size: 14px; line-height: 1.65; color: var(--g1); margin: 10px 0 0; }
 .weak { font-size: 12px; color: var(--g3); margin: 12px 0 0; }
 .weak b { color: var(--ink); font-weight: 700; }

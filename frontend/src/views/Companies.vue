@@ -40,7 +40,7 @@ watch([sort, query], () => { shown.value = PAGE })
 <template>
   <div class="pad wrap">
     <header class="reveal">
-      <p class="eyebrow">COMPANY HALL</p>
+      <p class="eyebrow">현직자 인터뷰 기반</p>
       <h1 class="page-title">기업 정보</h1>
       <p class="page-desc">
         채용 공고가 아니라 현직자 인터뷰로 확보한 기업 정보입니다. 진단 결과와 가까운 순서로 정렬했습니다.
@@ -74,7 +74,7 @@ watch([sort, query], () => { shown.value = PAGE })
       <a v-for="c in visible" :key="c.companyCode" class="co" :href="'#/company/' + c.companyCode">
         <div class="co-top">
           <CompanyLogo :name="c.companyName" :domain="c.domain" :size="46" />
-          <span v-if="matchOf(c.companyName)" class="match num">{{ matchOf(c.companyName).score }}<em>match</em></span>
+          <span v-if="matchOf(c.companyName)" class="match num">{{ matchOf(c.companyName).score }}<em>매치</em></span>
           <span v-else class="undiag">진단 전</span>
         </div>
 
@@ -87,7 +87,7 @@ watch([sort, query], () => { shown.value = PAGE })
         <dl class="co-meta num">
           <div><dt>현직자</dt><dd>{{ c.people }}명</dd></div>
           <div><dt>인사이트</dt><dd>{{ c.insight }}건</dd></div>
-          <div><dt>최근 조사</dt><dd>{{ c.interviewed }}</dd></div>
+          <div><dt>최근 인터뷰</dt><dd>{{ c.interviewed }}</dd></div>
         </dl>
       </a>
     </div>
@@ -164,7 +164,7 @@ watch([sort, query], () => { shown.value = PAGE })
 
 .co-name { font-size: 12px; font-weight: 700; color: var(--g3); margin: 20px 0 0; }
 .co h3 {
-  font-size: 17px; font-weight: 800; letter-spacing: -0.03em;
+  font-size: 18px; font-weight: 800; letter-spacing: -0.03em;
   margin: 6px 0 0; line-height: 1.4;
   min-height: 2.8em;
 }
